@@ -233,4 +233,4 @@ device_test: $(DEVICE_TEST_OBJFILES)
 #
 
 clean:
-	rm -f ./objects/* $(ALPHA_TARGETS) $(BRAVO_TARGETS) $(FOXTROT_TARGETS) $(KILO_TARGETS) $(DEVICE_TEST_TARGET) device/device_test.o
+	rm -f ./objects/*.o $(ALPHA_TARGETS) $(BRAVO_TARGETS) $(FOXTROT_TARGETS) $(KILO_TARGETS) $(DEVICE_TEST_TARGET) device/device_test.o
