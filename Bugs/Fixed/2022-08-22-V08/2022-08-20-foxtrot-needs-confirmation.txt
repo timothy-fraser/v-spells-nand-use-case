@@ -1,0 +1,18 @@
+
+SUBJECT:
+
+Foxtrot 1
+Foxtrot 2
+
+OBSERVED:
+
+tim@buttscoot:~/Documents/V-SPELLS/testrig-v03$ ./test_foxtrot_1
+FOXTROT 1 DRIVER
+Failed to write 65536 bytes to storage address 0.
+tim@buttscoot:~/Documents/V-SPELLS/testrig-v03$ ./test_foxtrot_2
+FOXTROT 2 DRIVER
+Failed to write 65536 bytes to storage address 0.
+
+EXPECTED:
+
+Not sure what to expect.  Need to confirm above is correct.

@@ -1,0 +1,184 @@
+
+SUBJECT:
+
+Device emulator
+
+OBSERVED:
+
+alpha_4.c:nand_read() does this:
+
+                        value = *((unsigned char*)driver_ioregister +
+                                IOREG_DATA);
+                        *(buffer+(i*8)+j) = value;
+
+(Note the use of the bounce variable "value".)
+
+It produces this output where reading the last "j" into the buffer
+doesn't overwrite the following zeroes:
+
+ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghij----
+
+bravo_4.c:nand_read() does this:
+
+	                *((unsigned char*)driver_ioregister + IOREG_DATA) =
+		                buffer[(i*8)+j];
+
+(Note the lack of bounce variable.)
+
+It produces incorrect output where the last read seems to copy values
+to the subsequent four bytes, too.  (The "opqr" at the end should be
+"----".)
+
+ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijopqr
+
+Jake noted that he had to use a bounce variable in
+alpha_0.c:nand_read() like so:
+
+               value = *((unsigned char*)driver_ioregister + IOREG_DATA);
+                *buffer++ = value;
+
+Or he saw the kind of infinite loop behavior that I associated with
+the machine emulator accidentally overwriting beyond the end of a
+variable on the stack and (I guessed) clobbering the return address.
+
+DEBUGGING NOTES:
+
+objdump uses AT&T syntax, so mov %rax, %rdx means "move RAX to RDX".
+
+RAX 64 bits
+EAX 32 bits
+ AX 16 bits
+ AH  8 bits, MSB byte of AX
+ AL  8 bits, LSB byte of AX
+
+The cdecl calling convention means that the called function can use
+RAX, RCX, RDX.  Functions return values in RAX.  Parms passed in RDI
+and ESI.
+
+Here's an annotated disassemby of alpha_0.c:nand_read() bouncing the
+read through a "value" local variable:
+
+00000000000021a1 <nand_read>:
+     push   %rbp
+     mov    %rsp,%rbp           # last line of preamble.
+     mov    %rdi,-0x18(%rbp)    # save buffer address parm to stack
+     mov    %esi,-0x1c(%rbp)    # save length parm to stack
+     movl   $0x100,-0x4(%rbp)   # page_size = NUM_BYTES;
+     mov    -0x1c(%rbp),%eax    # length parm to EAX
+     cmp    -0x4(%rbp),%eax     # if (length <= page_size)
+     jbe    21e1 <nand_read+0x40>  # then branch to foo
+     mov    $0xffffffff,%eax
+     jmp    21f1 <nand_read+0x50>  # branch to out
+baz: mov    0x100402f(%rip),%rax   # ioregister address to RAX
+     movzbl (%rax),%eax            # ioregister 8-bit value to EAX WP!
+     mov    %al,-0x5(%rbp)         # data byte of ioregister to "value" local
+     mov    -0x18(%rbp),%rax       # buffer address to RAX
+     lea    0x1(%rax),%rdx         # RDX is now buffer address + 1
+     mov    %rdx,-0x18(%rbp)       # buffer now holds incremented address
+     movzbl -0x5(%rbp),%edx        # value byte to EDX
+     mov    %dl,(%rax)             # store data byte to buffer via *EAX
+foo: mov    -0x1c(%rbp),%eax      # length parm to EAX
+     lea    -0x1(%rax),%edx       # EDX is length - 1
+     mov    %edx,-0x1c(%rbp)      # store decremented length in "length"
+     test   %eax,%eax             #
+     jne    21c2 <nand_read+0x21> # loop to baz if length != 0
+     mov    -0x1c(%rbp),%eax      # set EAX to length
+out: pop    %rbp
+     retq   
+
+
+Here's the same function without the "value" bounce variable:
+
+00000000000021a1 <nand_read>:
+     push   %rbp
+     mov    %rsp,%rbp             # last line of preamble
+     mov    %rdi,-0x18(%rbp)      # save buffer address
+     mov    %esi,-0x1c(%rbp)      # save length
+     movl   $0x100,-0x4(%rbp)     # page_size = NUM_BYTES
+     mov    -0x1c(%rbp),%eax      # length parm to EAX
+     cmp    -0x4(%rbp),%eax       # if length <= page size
+     jbe    21da <nand_read+0x39>  # jump to foo
+     mov    $0xffffffff,%eax
+     jmp    21ea <nand_read+0x49>  # jump to out
+bar: mov    0x100402f(%rip),%rdx   # ioregister address to RDX
+     mov    -0x18(%rbp),%rax       # buffer address to RAX
+     lea    0x1(%rax),%rcx         # buffer address + 1 to RCX
+     mov    %rcx,-0x18(%rbp)       # store incremented address in local
+     movzbl (%rdx),%edx            # store data byte to EDX (reg reuse) WP!
+     mov    %dl,(%rax)             # data byte from DL to buffer via *EAX
+foo: mov    -0x1c(%rbp),%eax       # length parm to EAX
+     lea    -0x1(%rax),%edx        # EDX is length -1
+     mov    %edx,-0x1c(%rbp)       # store decremented length in local
+     test   %eax,%eax              #
+     jne    21c2 <nand_read+0x21>  # loop to bar if length != 0
+     mov    -0x1c(%rbp),%eax       # set EAX to length
+out: pop    %rbp
+     retq   
+
+Summary:
+
+If you read the ioregister's data byte into a local bounce variable on
+the stack, GCC uses RAX to hold the address of the ioregister's data
+byte and then reads the value of that byte into RAX aka EAX aka AX aka
+AL.  This read triggers the watchpoint, and the debugger needs to
+update the value of RAX/EAX/AX/AL.
+
+The code after the watchpoint uses EDX to receive incremented buffer
+values and immediately store them back to the stack.  It also used EDX
+to receive decremented length values and immediately store them back
+to the stack.  It doesn't use EDX to remember values between loop
+iterations, and if the debugger overwrote EDX the code should still
+work.
+
+This is the pattern I originally implemented in my howto code to Matt.
+
+If you read the ioregister's data byte directly into a spot in your
+destination buffer, GCC emits code with different register usage.  GCC
+uses RDX to hold the address of the ioregister's data byte and then
+reads the value of that byte into RDX aka EDX aka DX aka DL.  This
+read triggers the watchpoint, and the debugger needs to update the
+value of RDX/RDX/DX/DL.
+
+Unfortunately, GCC loads the address of the buffer location that needs
+to receive the data byte into RAX before the watchpoint.  When the
+existing debugger code mistakenly replaces this RAX pointer value with
+the data read from the ioregister, the driver tries to store to that
+invalid locaiton.  The child process likely segfaults, but it looks
+like a hang to the user because the parent debugger catches the signal
+and the whole system hangs (I think).
+
+Analysis:
+
+For bounce variable drivers, on watchpoint activation the debugger
+will see:
+
+  RAX: AL will have the previous value of the ioregister's data byte
+       that it read from RAM.
+  RDX: The last decremented value of the "length" local.
+  RIP: will point to the instruction following this:
+       0f b6 00                movzbl (%rax),%eax  
+
+For direct-to-buffer drivers, on watchpoint activation the debugger
+will see:
+
+  RAX: The buffer address where the data byte needs to go.
+  RDX: DL will have the previous value of the ioregister's data byte
+       that it read from RAM.
+  RIP: will point to instruction following this:
+       0f b6 12                movzbl (%rdx),%edx
+
+Conceivably some other pattern might add RBX or RCX into the mix.
+
+The 0f b6 is the move opcode indicating the one-byte flavor of the
+movzx move with zero extend instruction.  The last byte encode the
+source and destination in ModRM format.  According to tables 2-1 and
+2-2 from the Intel 64 and IA-32 architecture software developer's
+manual, this third byte should look like this:
+
+AX (000bin) to AX = 0x00
+BX (011bin) to BX = 0x1B
+CX (001bin) to CX = 0x09
+DX (010bin) to DX = 0x12
+
+
+

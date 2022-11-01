@@ -1,0 +1,18 @@
+
+SUBJECT:
+
+All drivers.
+
+OBSERVED:
+
+Instead of driver calling a framework function to tell the framework
+whether it will use a jump table or command interpreter, the framework
+calls a driver function to do this.  This is the reverse of the
+pattern we want to mimic.
+
+See E-mail thread.
+
+EXPECTED:
+
+Driver registers its jump table or command interpreter with framework
+by calling a framework function.

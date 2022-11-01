@@ -1,0 +1,16 @@
+
+SUBJECT:
+
+framework.c:exec_write()
+framework.c:exec_read()
+framework.c:exec_erase()
+
+OBSERVED:
+
+NAND_OP_WAITRDY_INSTR given 1000 as an argument.
+
+EXPECTED:
+
+NAND_OP_WAITRDY_INSTR given a timeout appropriate to the operation,
+ideally using a constant defined in driver.h.
+

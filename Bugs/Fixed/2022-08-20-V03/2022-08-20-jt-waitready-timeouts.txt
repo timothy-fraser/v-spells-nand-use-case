@@ -1,0 +1,61 @@
+
+SUBJECT:
+
+./driver/bravo/bravo_6.c:	unsigned int timeout = clock() + NAND_TIMEOUT;
+./driver/bravo/bravo_5.c:	unsigned int timeout = clock() + NAND_TIMEOUT;
+./driver/bravo/bravo_4.c:	unsigned int timeout = clock() + NAND_TIMEOUT;
+./driver/bravo/bravo_0.c:	unsigned int timeout = clock() + NAND_TIMEOUT;
+./driver/bravo/bravo_1.c:	unsigned int timeout = clock() + NAND_TIMEOUT;
+./driver/alpha/alpha_4.c:	unsigned int timeout = clock() + NAND_TIMEOUT;
+./driver/alpha/alpha_1.c:	unsigned int timeout = clock() + NAND_TIMEOUT;
+./driver/alpha/alpha_0.c:	unsigned int timeout = clock() + NAND_TIMEOUT;
+./driver/alpha/alpha_5.c:	unsigned int timeout = clock() + NAND_TIMEOUT;
+./driver/alpha/alpha_6.c:	unsigned int timeout = clock() + NAND_TIMEOUT;
+
+OBSERVED:
+
+(1) Manual Table 6 driver-framework jump table interface says
+    (incorrectly) that wait_read() takes no arguments.  They need to
+    take a timeout argument like the exec_op interface does because
+    different storage device operations take a different amount of
+    time:
+
+         From device_emu.c, and consistent with my E-mail to the devs:
+	 /* Durations (microseconds) */
+         #define READ_PAGE_DURATION   100
+         #define WRITE_PAGE_DURATION  600
+         #define ERASE_BLOCK_DURATION 2000
+         #define RESET_DURATION       500
+
+
+(2) Wait_ready() functions do not take a timeout argument.  Struct
+    nand_jump_table in framework.h does not give wait_ready() a
+    timeout argument.
+
+(3) Driver nand_wait() functions use clock() as their version of the
+    kernel's "jiffies" variable - a good choice since they both give a
+    monotonically increasing number of clock ticks.  However, it uses
+    a fixed NAND_TIMEOUT is in microseconds, not clock ticks, and thus
+    the timeout time is computed incorrectly in two ways: First, the
+    timeout interval comes from a constant rather than an argument,
+    and second it mixes ticks and microseconds.
+
+
+
+EXPECTED:
+
+(1) Manual driver to framework jump table table shows wait_ready()
+    taking a timeout paramter.
+
+(2) Jump table type and wait_ready() functions take a timeout
+    parameter.  Constants for this parameter should be in driver.h so
+    the framework can use them.
+
+(3) wait_ready() functions compute timeout from parameter and take
+    care with units.
+
+
+
+
+
+

@@ -1,0 +1,72 @@
+
+SUBJECT:
+
+Foxtrot 0
+
+OBSERVED:
+
+tim@buttscoot:~/Documents/V-SPELLS/testrig-v03$ ./test_foxtrot_0 
+FOXTROT 0 DRIVER
+Failed to write 65536 bytes to storage address 0.
+
+EXPECTED:
+
+Successful test.
+
+ANALYSIS:
+
+The first cause of this bug was in foxtrot_0.c:exec_op() where it was
+missing length comparisons on calls to nand_read() and nand_program()
+and incorrectly returning an error when those calls returned non-zero
+correct lengths.  All the foxtrot and kilo drivers had this bug.
+
+Once corrected, a second cause was revealed:
+
+Reading data...
+The driver has used a machine instruction that the device
+emulator does not yet understand.  Please include the
+following program text bytes in a bug report:
+Program text: 01 0f b6 12 88 10
+
+
+
+000000000000230e <nand_read>:
+        push   %rbp
+        mov    %rsp,%rbp              # end of preamble
+        mov    %rdi,-0x18(%rbp)       # save buffer address
+        mov    %esi,-0x1c(%rbp)       # save length
+        movl   $0x100,-0x8(%rbp)      # page_size = NUM_BYTES
+        mov    -0x1c(%rbp),%eax       # length to RAX
+        cmp    -0x8(%rbp),%eax        # compare with page_size
+        jbe    232f <nand_read+0x21>  # goto foo if size OK
+        mov    $0xffffffff,%eax       # move -1 into RAX to indicate error
+        jmp    235d <nand_read+0x4f>  # goto out;
+foo:    movl   $0x0,-0x4(%rbp)        # i = 0
+        jmp    2352 <nand_read+0x44>  # goto bar
+baz:    mov    0x1003eb9(%rip),%rax   # put address of data ioregister in RAX
+        mov    -0x4(%rbp),%ecx        # put i into RCX
+        mov    -0x18(%rbp),%rdx       # put buffer address into RDX
+        add    %rcx,%rdx              # RDX = address of buffer[i]
+        movzbl (%rax),%eax            # read ioregister byte into RAX (WP!)
+        mov    %al,(%rdx)             # store RAX byte into buffer[i]
+        addl   $0x1,-0x4(%rbp)        # increment i
+bar:    mov    -0x4(%rbp),%eax        # move i to RAX
+        cmp    -0x1c(%rbp),%eax       # compare i and legnth
+        jb     2338 <nand_read+0x2a>  # goto baz
+        mov    -0x1c(%rbp),%eax       # put length in RAX
+out:    pop    %rbp                   # return result in RAX
+        retq   
+
+Finding that the above code is a typical RAX case the device emulator
+should already handle, and further finding that the program text
+printed by the error message did not occur in nand_read, I searched
+around through the foxtrot_0 disassembly and found that the error
+message program text was for nand_program()'s ioregister write.
+
+We should not be fixing up registers on programs, only reads.
+
+Root cause:
+
+The framework, foxtrot, and kilo drivers had their "ins" and "outs"
+reversed.  Per the manual spec table 7, "in" means program or write,
+"out" means read.

@@ -1,0 +1,15 @@
+
+SUBJECT:
+
+Bravo 3 test
+
+OBSERVED:
+
+tim@buttscoot:~/Documents/V-SPELLS/testrig-v03$ ./test_bravo_3
+BRAVO 3 DRIVER
+Failed to write 65536 bytes to storage address 0.
+
+EXPECTED:
+
+Successful copy.  Deliberate bug shouldn't prevent this.  Shouldn't
+see timeout as above.

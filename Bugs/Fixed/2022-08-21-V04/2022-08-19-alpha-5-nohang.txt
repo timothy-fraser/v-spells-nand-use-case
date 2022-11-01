@@ -1,0 +1,15 @@
+
+SUBJECT:
+
+Alpha 5 driver test
+
+OBSERVED:
+
+tim@buttscoot:~/Documents/V-SPELLS/testrig-v03$ ./test_alpha_5
+ALPHA 5 DRIVER
+Index 1: 0x00 == 0x01 FAILED
+
+EXPECTED:
+
+Deliberate hang.
+

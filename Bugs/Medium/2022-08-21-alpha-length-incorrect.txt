@@ -1,0 +1,14 @@
+
+SUBJECT:
+
+alpha_0.c:nand_read()
+possibly other functions,
+possibly other drivers.
+
+OBSERVED:
+
+nand_read loop decrements length so that it is 0 upon return.
+
+EXPECTED:
+
+Loop should return the number of bytes read, not 0.

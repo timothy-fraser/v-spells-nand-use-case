@@ -1,0 +1,13 @@
+
+SUBJECT:
+
+Manual table 6 driver to framework jump table interface.
+
+OBSERVED:
+
+No discussion of return values.
+
+EXPECTED:
+
+Spec of return values of each function in jump table.
+

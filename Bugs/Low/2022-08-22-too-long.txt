@@ -1,0 +1,25 @@
+
+SUBJECT:
+
+device_emu.c
+framework.c
+
+OBSERVED:
+
+As of v12:
+
+  658 LOC ./framework/framework.c
+  845 LOC ./device/device_emu.c
+
+In device_emu.c:
+Its handle_watchpoint_ioregisters() function is 275 lines long.
+It has a number of lines that are at least 80 characters long.
+
+EXPECTED:
+
+Big .c files broken into multiple files, with functions of similar
+purpose in the same file.
+
+Long routines broken into a series of short routines by common purpose.
+
+Long lines wrapped.

@@ -1,0 +1,12 @@
+
+SUBJECT:
+
+Bravo 2 driver test
+
+OBSERVED:
+
+Test appears to hang with no output.
+
+EXPECTED:
+
+Test completed OK - deliberate bug should not impact successful test.

@@ -1,0 +1,17 @@
+
+SUBJECT:
+
+alpha driver 4 test
+alpha driver 5 test
+alpha driver 6 test
+
+OBSERVED:
+
+tim@buttscoot:~/Documents/V-SPELLS/testrig-v03$ ./test_alpha_4
+ALPHA 4 DRIVER
+Index 256: 0x09 == 0x01 FAILED
+
+EXPECTED:
+
+Some English-language indication that the write-read data did not match.
+

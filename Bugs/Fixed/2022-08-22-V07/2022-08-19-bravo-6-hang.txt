@@ -1,0 +1,45 @@
+
+SUBJECT:
+
+Bravo 6 driver test.
+
+OBSERVED:
+
+Hang.
+
+EXPECTED:
+
+Copy match failure on lowest index.
+
+ANALYSIS:
+
+The intentional program-backwards bug is in bravo 6's nand_program:
+
+0000000000002397 <nand_program>:
+        push   %rbp
+        mov    %rsp,%rbp                 # end of preamble
+        mov    %rdi,-0x18(%rbp)          # save buffer address parm
+        mov    %esi,-0x1c(%rbp)          # save length parm
+        movl   $0x100,-0x8(%rbp)         # put page len in local
+        mov    -0x1c(%rbp),%eax          # put length in EAX
+        cmp    -0x8(%rbp),%eax           # compare length to buffer length
+        jbe    23b8 <nand_program+0x21>  # goto foo if length is OK
+        mov    $0xffffffff,%eax
+        jmp    23dd <nand_program+0x46>  # goto out, length already in RAX
+foo:    mov    -0x1c(%rbp),%eax          # length in RAX
+        sub    $0x1,%eax                 # decrement length in RAX
+        mov    %eax,-0x4(%rbp)           # save decremented length to i
+bar:    mov    -0x4(%rbp),%edx           # i to RDX
+        mov    -0x18(%rbp),%rax          # buffer address to RAX
+        add    %rax,%rdx                 # buffer[i] address to RDX
+        mov    0x1003e26(%rip),%rax      # data ioregister addr to RAX
+        movzbl (%rdx),%edx               # buffer[i] byte value to RDX
+        mov    %dl,(%rax)                # byte to ioregister via RAX (WP!)
+        subl   $0x1,-0x4(%rbp)           # decrement i
+        jmp    23c1 <nand_program+0x2a>  # goto bar
+out:    pop    %rbp                      # return length in RAX
+        retq   
+
+The assembly is fine; this isn't a read so there was really no need to
+do this analysis.  Ultimately it turned out to be a bug in the loop
+logic involving <= and i-- vs. --i.

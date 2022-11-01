@@ -1,0 +1,15 @@
+
+SUBJECT:
+
+Alpha 4 driver test.
+
+OBSERVED:
+
+tim@buttscoot:~/Documents/V-SPELLS/testrig-v03$ ./test_alpha_4 
+ALPHA 4 DRIVER
+Index 256: 0x09 == 0x01 FAILED
+
+EXPECTED:
+
+If the error is supposed to be near the end of the buffer, I expected
+to see the copy mismatch on a higher index.

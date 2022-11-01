@@ -1,0 +1,16 @@
+
+SUBJECT:
+
+Bravo 4 driver test.
+
+OBSERVED:
+
+tim@buttscoot:~/Documents/V-SPELLS/testrig-v03$ ./test_bravo_4
+BRAVO 4 DRIVER
+Index 0: 0x01 == 0x00 FAILED
+
+EXPECTED:
+
+If the bug is that the last couple of bytes don't get copied, I would
+have epxected to see this mis-match on a higher index.
+

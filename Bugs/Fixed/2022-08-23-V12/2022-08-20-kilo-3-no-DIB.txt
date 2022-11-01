@@ -1,0 +1,12 @@
+
+SUBJECT:
+
+Kilo 3 test
+
+OBSERVED:
+
+hang.
+
+EXPECTED:
+
+DIB validation error.

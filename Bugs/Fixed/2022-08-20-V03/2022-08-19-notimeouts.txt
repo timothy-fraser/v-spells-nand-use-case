@@ -1,0 +1,25 @@
+
+SUBJECT
+
+tester.c:tester_main()
+kilo_tester.c:tester_main()
+kilo_tester_6.c:tester_main()
+framework.c:jt_write()
+framework.c:jt_read()
+framework.c:jt_erase()
+framework.c:exec_write()
+framework.c:exec_read()
+framework.c:exec_erase()
+framework.c:write_nand()
+framework.c:read_nand()
+framework.c:erase_nand()
+
+OBSERVED:
+
+There is no execution path that reports device timeouts.
+
+EXPECTED:
+
+There should be a path through the above functions that will report an
+error value to the tester when the device times out.  The tester
+should produce some kind of output indicating timeout.

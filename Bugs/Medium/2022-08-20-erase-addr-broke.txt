@@ -1,0 +1,33 @@
+
+SUBJECT:
+
+Manual table 6 driver-framework jump table interface.
+All drivers.
+Framework.
+
+
+OBSERVED:
+
+(1) No spec for erase in manual table.
+
+(2) Present interface asks for a start offset and a length in bytes.
+
+(3) The start and end block computations in jt_erase() and
+    exec_erase() appear to arrive at the right answer for the wrong
+    reasons.  They divide the start offset ny the number of block on
+    the device and the number of pages per block instead of the number
+    of pages per block and the number of bytes per page.  There is
+    also some unneeded intermediate variables.
+
+
+EXPECTED:
+
+(1) A description of an erase function in the manual.
+
+(2) Although the read and program functions justifiably ask for a
+    start offset and a length in bytes, it seems odd for erase to work
+    this way, since it operates on erase blocks and it's not possible
+    to start an erase part way through a block.
+
+(3) Correct computations that always hit the start of a block.
+

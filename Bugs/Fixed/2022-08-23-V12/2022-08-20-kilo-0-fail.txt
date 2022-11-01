@@ -1,0 +1,14 @@
+
+SUBJECT:
+
+Kilo 0 driver test
+
+OBSERVED:
+
+tim@buttscoot:~/Documents/V-SPELLS/testrig-v03$ ./test_kilo_0 
+KILO 0 DRIVER
+Failed to write 65536 bytes to storage address 0.
+
+EXPECTED:
+
+Successful test.

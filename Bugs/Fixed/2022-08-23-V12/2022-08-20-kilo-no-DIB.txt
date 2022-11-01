@@ -1,0 +1,14 @@
+
+SUBJECT:
+
+kilo 1 driver
+
+OBSERVED:
+
+tim@buttscoot:~/Documents/V-SPELLS/testrig-v03$ ./test_kilo_1
+KILO 1 DRIVER
+Failed to write 65536 bytes to storage address 0.
+
+EXPECTED:
+
+DIB validation failure.

@@ -1,0 +1,15 @@
+
+SUBJECT:
+
+Manual's description of alpha 6 and bravo 6 tests.
+
+OBSERVED:
+
+Entire buffer isn't in reverse order, the data in each page is in
+reverse order.
+
+EXPECTED:
+
+Manual says data is in reverse order.  Probably should change manual
+to reflect actual behavior.
+

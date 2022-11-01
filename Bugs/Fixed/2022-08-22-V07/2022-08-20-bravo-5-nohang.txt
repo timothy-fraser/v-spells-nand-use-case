@@ -1,0 +1,12 @@
+
+SUBJECT:
+
+Bravo 5 test
+
+OBSERVED:
+
+Successful completion; no output.
+
+EXPECTED:
+
+Deliberate hang.

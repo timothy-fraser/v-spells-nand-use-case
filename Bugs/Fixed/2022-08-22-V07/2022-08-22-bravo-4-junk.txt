@@ -1,0 +1,45 @@
+
+SUBJECT:
+
+Bravo 4 driver test.
+
+OBSERVED:
+
+Data read from device (ideally identical):
+abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
+ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
+qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
+yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
+ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijopqr
+
+Buffers differ at index 296.
+
+EXPECTED:
+
+Data read from device (ideally identical):
+abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
+ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
+qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
+yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
+ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghij----
+
+Buffers differ at index 296.
+
+Note that in the expected version, the last four bytes are zeroes.
+
+
+ANALYSIS:
+
+This is actually a spec bug; needs a change to the manual and a
+corresponding fix to the device emulator.
+
+When the driver is programming multiple pages, it pushes data through
+the data ioregister into the device's cache.  bravo 4 first pushed a
+whole page of data into the cache, filling it entirely.  Then it wrote
+C_PROGRAM_EXECUTE to cause the device to write that cached page to
+storage.  Then bravo 4 wrote a part of a page to cache.  Because the
+spec didn't say the device needed to clear its cache after writing the
+cache contents to storage on C_PROGRAM_EXECUTE, the last few bytes
+from the first page of data remained in cache and got written to
+storage in the second page.  These extra bytes are the ones that
+showed up in the bravo 4 output instead of zeroes.

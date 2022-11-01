@@ -1,0 +1,25 @@
+
+SUBJECT:
+
+framework.c read, write, erase functions.
+some driver read, write, erase functions.
+
+OBSERVED:
+
+(1) Some drivers read, write, erase functions return 0 rather than the
+    proper length value on success.
+
+(2) The framework read, write, erase functions fail to check the
+    return values of the driver read, write, erase functions in their
+    per-page/per-block operating loops, and just presume these
+    functions succeed.
+
+EXPECTED:
+
+(1) All driver read, write, erase functions should return a meaningful
+    length value on success.
+
+(2) The framework read, write, and erase functions should return -1
+    when a page or block operaiton fails, just as they do with
+    timeouts.
+    

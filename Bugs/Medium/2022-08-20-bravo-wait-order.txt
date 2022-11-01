@@ -1,0 +1,13 @@
+
+SUBJECT:
+
+bravo_[0-6].c:wait_ready()
+
+OBSERVED:
+
+Inner loop seems to do poll-sleep-checkresult.
+
+EXPECTED:
+
+Inner loop does poll-checkresult-sleep.  Does this match the real
+driver's (admittedly odd) behavior?

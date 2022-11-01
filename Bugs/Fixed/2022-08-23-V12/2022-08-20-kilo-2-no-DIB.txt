@@ -1,0 +1,14 @@
+
+SUBJECT:
+
+Kilo 2 test
+
+OBSERVED:
+
+tim@buttscoot:~/Documents/V-SPELLS/testrig-v03$ ./test_kilo_2
+KILO 2 DRIVER
+device emulator: in machine state bug.
+
+EXPECTED:
+
+DIB validation error.

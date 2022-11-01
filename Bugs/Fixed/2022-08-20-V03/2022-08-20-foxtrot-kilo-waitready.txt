@@ -1,0 +1,26 @@
+
+SUBJECT:
+
+foxtrot_0.c:nand_wait()
+foxtrot_1.c:nand_wait()
+foxtrot_2.c:nand_wait()
+kilo_0.c:nand_wait()
+kilo_1.c:nand_wait()
+kilo_2.c:nand_wait()
+kilo_3.c:nand_wait()
+kilo_4.c:nand_wait()
+kilo_5.c:nand_wait()
+kilo_6.c:nand_wait()
+
+
+OBSERVED:
+
+nand_wait() polls the device, and if it finds it busy it sleeps for
+the timeoutduration.  Once device is ready, returns 0.
+
+EXPECTED:
+
+namd_wait() polls the device, and if it finds it busy it sleeps for a
+SLEEP INTERVAL.  Once the device is ready, returns 0.  *If the polling
+exceeds timeoutduration, returns -1.*
+

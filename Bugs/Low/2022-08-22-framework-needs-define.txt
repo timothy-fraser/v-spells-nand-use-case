@@ -1,0 +1,16 @@
+
+SUBJECT:
+
+framework.c:exec_write()
+framework.c:exec_read()
+framework.c:exec_erase()
+
+OBSERVED:
+
+Each of these functions defines an array of storage device
+instructions using an integer literal for its length.
+
+EXPECTED:
+
+There should be a #define for this length and some kind of error
+handling if an operation has more than this number of instructions.

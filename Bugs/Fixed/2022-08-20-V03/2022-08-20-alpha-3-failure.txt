@@ -1,0 +1,17 @@
+
+SUBJECT:
+
+Alpha 3 driver
+
+OBSERVED:
+
+tim@buttscoot:~/Documents/V-SPELLS/testrig-v03$ ./test_alpha_3
+ALPHA 3 DRIVER
+Failed to write 65536 bytes to storage address 0.
+
+(Looks like the wait function returned ready before the device was ready.)
+
+EXPECTED:
+
+Correct operation.
+

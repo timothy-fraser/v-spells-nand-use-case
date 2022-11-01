@@ -1,0 +1,20 @@
+
+SUBJECT:
+
+Manual's description of kilo 6 driver.
+
+OBSERVED:
+
+Drivers aren't bothered by infinite loops in the old DIB because they
+add their new devices to the front of the linked list rather than the
+end and don't traverse the list.
+
+EXPECTED:
+
+Drivers that didn't check the DIB for well-formedness before adding
+their device would try to traverse the infinite loop list and hang.
+
+ANALYSIS:
+
+Given the lateness of the hour, let's remove this buggy driver from
+the initial release.
