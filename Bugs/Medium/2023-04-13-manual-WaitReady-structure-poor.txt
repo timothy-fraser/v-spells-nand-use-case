@@ -1,0 +1,22 @@
+
+SUBJECT:
+
+Use case manual.
+
+OBSERVED:
+
+When describing the structure of driver wait-ready loops, the use case
+manual lazily refers the Linux nand_gpio_waitrdy() function commonly
+used by real drivers rather than specifically enumerating structure
+requirements. This laziness appears to have prompted the use case
+software developers to implement their wait-ready loops in the same
+fashion as those in real Linux NAND drivers: they will not poll the
+device if they find the timeout interval has already elapsed before
+they begin looping. In their initial P modeling experiment Vanderbilt
+University, working from the same design document, modeled their loops
+in a different way: they will always poll at least once.
+
+EXPECTED:
+
+The use case manual ought to explicitly describe the structure of
+wait-ready loops so that the requirement is clear.

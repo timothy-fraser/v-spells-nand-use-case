@@ -1,0 +1,37 @@
+
+SUBJECT:
+
+Use case manual.
+device_emu.c
+
+OBSERVED:
+
+The use case manual's specification of the NAND storage device
+emulator explicitly requires that, upon executing a read, program, or
+erase instruction, it should become busy for a constant amount of time
+appropriate to the instruction.
+
+The device emulator implementation in device_emu.c faithfully follows
+this requirement.
+
+
+EXPECTED:
+
+The manual's present specification essentially describes a perfect
+device.  Its constant wait times are always within the timeout bound
+of driver wait-ready loops.  This means that the test rig's software
+tests will be able to exercise the successful exit from driver
+wait-ready loops, but never the timeout exit that occurs when a faulty
+device does not become ready in time.
+
+This is essentially and idea for a new device emulator feature: if the
+device emulator had a mode where it always or sometimes took too long
+to return to ready, it would enable tests of both the success and
+timeout exit paths of driver wait-ready loops.
+
+Note that implementing this feature might impact addtional parts of
+the test rig, as the current design does not anticipate a need for
+multiple device emulator modes, and a simple solution that randomly
+succeeded or failed would make the test results frustratingly
+unpredictable.
+

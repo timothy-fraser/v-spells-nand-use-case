@@ -1,0 +1,23 @@
+
+SUBJECT:
+
+Use case manual.
+
+OBSERVED:
+
+The design’s definition of desirable properties for the driver
+wait-ready loops that manage device timeouts is poor–specifically the
+second property:
+
+    On termination, either (a) the device is ready, or (b) the clock
+    has ticked through the timeout interval.
+
+EXPECTED:
+
+The design’s definition does not explain the causal relationship
+between the ready/busy state of the device and the final indication of
+the loop. A better definition might specify that, if the device
+becomes ready during the wait interval, the wait loop must terminate
+and indicate the driver should proceed. Otherwise, it should terminate
+and indicate a timeout error condition.
+

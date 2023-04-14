@@ -1,0 +1,23 @@
+
+SUBJECT:
+
+Use case manual.
+
+OBSERVED:
+
+The Foxtrot drivers use command interpreters to process operations,
+which are streams of individual instructions. The design’s enumeration
+of desirable properties explicitly requires command interpreter loops
+to process all instructions in an operation stream.
+
+EXPECTED:
+
+This is not the behavior of the real Linux driver exec-op()
+interpreters the Foxtrot drivers emulate. The real exec-op()
+interpreters will cease interpreting the instructions in an operation
+stream upon encountering a device timeout. This is a design bug; the
+design should require the exec-op() behavior.
+
+Note that, fortunately, the actual Foxtrot drivers ignored the design
+on this point and implemented the correct exec-op()-like behavior, so
+the problem is only in the manual.

@@ -4,11 +4,63 @@ SUBJECT:
 alpha_0.c:nand_read()
 possibly other functions,
 possibly other drivers.
+likely the use case manual.
 
 OBSERVED:
 
-nand_read loop decrements length so that it is 0 upon return.
+When I originally created this bug on 2022-08-21, I logged this
+incorrect obseervation:
+
+   nand_read loop decrements length so that it is 0 upon return.
+
+On 2023-04-03, Vanderbilt University's Mark Wutka independently
+rediscovered this bug while converting the alpha_0.c:nand_read()
+implementation to Frama-C and reasoning about its properties.  Unlike
+my above initial observation, his observation was accurate:
+
+   One of the difficulties I had is that length is declared as an
+   unsigned int. Normally for loops, you can declare a variant
+   variable or property that must tend towards 0, but is allowed to be
+   negative when the loop terminates. The bug I found was that since
+   nand_read is supposed to return 0 when successful, it is not
+   returning 0 when the loop terminates. I probably would not have
+   found it if length was declared as int, because it would have been
+   ﬁne with length being -1 coming out of the loop.
 
 EXPECTED:
 
-Loop should return the number of bytes read, not 0.
+Like my initial observation of the loop's behavior, my initial
+expectation of its correct behavior was also incorrect:
+
+    Loop should return the number of bytes read, not 0.
+
+Determining the actual correct behavior will require some
+reinvestigation of the actual Linux raw NAND flash storage driver
+behavior, as the pertinent details didn't make it from my notes into
+the use case manual's design spec.  A brief look confirms these facts:
+
+    - The use case Alpha drivers are meant to emulate the Linux
+      readsb() macro from include/asm-generic/io.h.  This macro uses
+      an unsigned int for its length count.  The use of an unsigned
+      rather than signed int may be unusual as Mark pointed out, but
+      it is the correct choice in this case.
+
+    - The readsb() macro is a void function - it doesn't return the
+      number of bytes read, nor does it return 0.  It returns nothing.
+
+    - The NAND_OP_DATA_IN_INSTR case of the gpio_nand_exec_instr
+      command interpreter helper function in Linux's foxtrot-style
+      drivers/mtd/nand/raw/gpio.c driver (indirectly) calls readsb()
+      and then explicitly returns 0.  It never returns a non-zero
+      value to indicate an error.  All the instruction cases return 0
+      in this fashion except for NAND_OP_WAITRDY_INSTR, which will
+      return a nonzero value on timeout.  gpio_nand_exec_op will quit
+      interpreting instructions and return a nonzero value to the NAND
+      framework if a timeout occurs, otherwise it returns 0 to
+      indicate all is well.
+
+We need some investigation into what the correct behavior ought to be.
+The comments in the driver code do not describe the correct behavior
+and will also need fixing.
+
+The use case manual spec may also need fixing.

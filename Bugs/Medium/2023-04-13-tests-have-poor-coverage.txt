@@ -1,0 +1,34 @@
+
+SUBJECT:
+
+tester.c, kilo_tester.c
+
+OBSERVED:
+
+tester.c and kilo_tester.c both perform a single write-read cycle of
+300 bytes to the device starting at erase block 0, page 0, byte 0.
+They write a buffer to the device, read it back, and confirm that the
+data read matched what they wrote earlier.
+
+EXPECTED:
+
+This single write-read cycle is sufficient to find the example bugs in
+the V16 driver corpus, but it is insufficient to find bugs that
+manifest only
+
+  (a) on longer transfers,
+  (b) at other block, page, and byte locations,
+  (c) in conjunction with erase operations, or in the most bizarre
+      cases
+  (d) after a particular long series of potentially unbalanced write,
+      read, and erase operations.
+
+We might get some value out of an additional test that implemented a
+grammar-based fuzzer that generated a long series of random read,
+write, and erase operations.
+
+Note that implementing an additional grammar-based fuzzer test might
+impact other parts of the test rig.  We'd likely want to keep the
+present tests because these involve no randomness and their results
+are comfortingly predictable.  The test rig's design did not
+anticipate multiple test modes, one random and one non-random.

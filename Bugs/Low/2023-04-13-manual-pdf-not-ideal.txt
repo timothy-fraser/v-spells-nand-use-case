@@ -1,0 +1,18 @@
+
+SUBJECT:
+
+Use case manual
+
+OBSERVED:
+
+Use case manual is a PDF file.  This is a binary format, and the Git
+source control system works best on text formats that it can easily
+diff.  If we update the manual often, I believe the git repository's
+history metadata will become bloated with many copies of old versions
+of the manual's PDF file.
+
+EXPECTED:
+
+We might be better off if we converted the manual into some kind of
+text-based format, if we can find one that will present the pseudocode
+and other document elements properly.

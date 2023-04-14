@@ -1,0 +1,34 @@
+
+SUBJECT:
+
+Use case manual.
+The corpus of buggy drivers.
+tester.c, kilo_tester.c
+
+OBSERVED:
+
+The use case manual does not list desirable properties for logic
+without loops.  For example, it uses English language and pseudocode
+to specify the algorithm that drivers seeking to initiate a device
+read or write must use. The algorithm provides the device with the
+numbers of the erase block, page, and byte to read or write serially,
+in that order. However, the manual does not attempt to define a formal
+safety property that demands drivers respect that ordering, or a
+liveness property that demands drivers always complete the
+three-number sequence once begun.
+
+Perhaps due to this omission, the use case’s tests use fixed zero
+values for its block, page, and byte numbers and cannot detect driver
+bugs that send these values to the device in the wrong order.
+
+The driver corpus does not include drivers with such bugs.
+
+EXPECTED:
+
+The use case manual should specify safety and liveness properties for
+the parts of driver-device interaction that don't require loops.
+
+The driver corpus should have some examples of drivers that violate
+those properties.
+
+The test suite should be capable of exercising those driver bugs.
