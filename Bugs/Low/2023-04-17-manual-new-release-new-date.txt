@@ -1,0 +1,14 @@
+
+SUBJECT:
+
+manual/introducton.html
+
+OBSERVED:
+
+Manual shows date of original Provatek report.
+
+EXPECTED:
+
+One we're done fixing bugs for the upcoming V17 release, we should
+update the date on the manual.  We might consider other changes to
+distinguish the updated manual from the V16 version.
