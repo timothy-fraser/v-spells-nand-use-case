@@ -1,0 +1,142 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0 Strict Level 1//EN">
+<HTML>
+  <HEAD>
+    <TITLE>V-SPELLS Use Case 2 User Manual</TITLE>
+  </HEAD><BODY>
+<H1>2.  The test rig debugs itself</H1>
+
+<P>The most unusual aspect of the test rig's design is its use of the
+Ptrace process trace library to emulate the semantics of IO registers
+and GPIO pins.  The test rig's source code includes several details
+specific to 64-bit Intel instruction set CPUs to support this usage;
+the test rig will build only on GNU/Linux platforms with this kind of
+CPU.  This section explains the need for Ptrace and its impact on the
+test rig's design.</P>
+
+<P>During test rig runtime, the device driver interacts with the
+device emulator according to a message-passing protocol described
+in <A HREF="device.html">Section 3</A>.  This protocol is synchronous;
+the device driver makes a request of the device emulator by writing to
+an IO register and blocks awaiting its reply.  The device emulator
+services the request by writing to an IO register and then blocks
+awaiting the next request.  Logically, control passes back and forth
+between device driver and device emulator with only one of the two
+operating at any given moment.
+<A HREF="testrig.html#ioregisters">Subsection 2.1</A>
+describes how the test rig uses hardware watchpoints to implement this
+message passing through IO registers.</P>
+
+<P>The device emulator does not present any asynchronous or
+interrupt-driven IO features to the driver.  When the relative
+slowness of device operations forces the driver to sleep until
+operations complete, the driver polls the device by getting the state
+of a status GPIO pin rather than registering for an interrupt.  A
+driver can also reset the device to its initial state by setting the
+state of a reset GPIO pin.  <A HREF="testrig.html#gpiopins">Subsection
+2.2</A> describes how the test rig uses software breakpoints to
+implement the getting and setting of GPIO pin state.</P>
+
+<A NAME="ioregisters">
+<H2>2.1.  Emulating IO registers with hardware watchpoints</H2>
+</A>
+
+<P>The device emulator presents an interface to device drivers that
+consists of three IO registers named command, address, and data.
+Logically, each IO register is an unsigned one-byte integer.  All
+three are stored in the least significant three bytes of a single
+eight-byte static volatile unsigned integer word in the initialized
+data segment of the device driver's address space.  The four bytes
+listed most- to least-significant are unused, command, address, and
+data.  Device drivers send commands and addresses to the emulated
+device by writing values to the command and address registers,
+respectively.  For example, in C:</P>
+
+<PRE WIDTH="80">
+#define COMMAND 0x00FF0000
+#define ADDRESS 0x0000FF00
+static volatile unsigned int ioregisters = 0;
+ioregisters = COMMAND;
+ioregisters = ADDRESS;
+</PRE>
+
+<P>Similarly, they can read data values from the emulated device by
+reading values from the data register.  For example:</P>
+
+<PRE WIDTH="80">
+#define MASK_DATA 0x000000FF
+unsigned int data = ioregisters & MASK_DATA;
+</PRE>
+
+<P>In the real world, the NAND flash storage device would react to each
+of the device driver's reads and writes to its registers by performing
+some operation.  These operations might change the device's internal
+state, change the values of the IO registers, or both.  The test rig
+uses the Ptrace process trace library to enable the device emulator to
+implement these operations.</P>
+
+<P>On startup, the test rig <CODE>fork()s</CODE> into two nearly
+identical processes: the parent tracer process and the child tracee
+process.  Neither the parent tracer process nor the child tracee
+process call <CODE>execve()</CODE>; they both continue to run
+different parts of the same test rig program.  During subsequent
+runtime, the parent tracer process executes the test rig's device
+emulator logic.  The child tracee executes the remainder of the test
+rig's logic, including the device driver.  The diagram in Figure 1
+shows the parent tracer as "process one" and the child tracee as
+"process two".</P>
+
+<P>The parent tracee process traces (that is, debugs) the child tracee
+process.  Although <CODE>fork()</CODE> provides the parent tracer and
+child tracee with separate address spaces, they each have an
+ioregister variable at the same location in their initialized data
+segments.  The parent tracer uses the knowledge of their common
+address layout to set a read/write hardware watchpoint on the IO
+register variable in the child tracee's address space.  Whenever the
+child tracee reads or writes to its IO register variable, this
+watchpoint causes it to block and control passes to the parent
+tracer.</P>
+
+<P>Upon activation, the parent tracer knows the child tracee's device
+driver logic has either read or written some part of its IO register
+variable.  The device driver logic presumes the device driver is
+following the driver-device message passing protocol correctly and
+decides the activation was due to a read or write of a particular
+logical register based on its present state.  In cases where the
+driver wrote to an IO register, the emulator uses
+the <CODE>ptrace()</CODE> function to retrieve the value it wrote from
+the child tracee's IO register variable.  In cases where the driver
+read from an IO register, the emulator uses the <CODE>ptrace()</CODE>
+function twice, once to write the value the driver ought to have seen
+to the child tracee's IO register variable, and once to write the same
+value to the whichever of the child tracee's general-purpose CPU
+registers was involved in the read.</P>
+
+<P>Once done, the parent tracer reactivates the child tracee and blocks
+awaiting the next watchpoint or breakpoint activation.</P>
+
+<A NAME="gpiopins">
+<H2>2.2.  Emulating GPIO pins with software breakpoints</H2>
+</A>
+
+<P>The NAND framework emulator component provides device drivers with
+two GPIO pin support functions that, in its source, appear to do
+little more than invoke the breakpoint assembly instruction.  Both
+take an argument to specify a particular GPIO pin.
+The <CODE>gpio_set()</CODE> function takes an additional value
+argument that must be 0 or 1.  When the device driver in the child
+tracee calls either of these functions, the breakpoints pass control
+to the device emulator in the parent tracer.  The device emulator then
+uses the ptrace library to emulate the effects of interacting with the
+device.  For the <CODE>gpio_set()</CODE> breakpoint, it reads the pin
+and value parameters and sets the state of the indicated emulated GPIO
+pin accordingly.  For the <CODE>gpio_get()</CODE> breakpoint, it reads
+the pin parameter, looks up the emulated state of that pin, and then
+sets the value <CODE>gpio_get()</CODE> will return accordingly.  The
+parent tracer then reactivates the child tracee and blocks itself
+until the next breakpoint or watchpoint activation.</P>
+
+<HR>
+
+<P><A HREF="manual.html">          Table of contents</A></P>
+
+</BODY></HTML>

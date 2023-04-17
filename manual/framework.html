@@ -1,0 +1,325 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0 Strict Level 1//EN">
+<HTML>
+  <HEAD>
+    <TITLE>V-SPELLS Use Case 2 User Manual</TITLE>
+  </HEAD><BODY>
+<H1>4.  NAND framework emulator</H1>
+
+<P>The NAND framework emulator provides device drivers with a collection
+of interfaces that resemble those the Linux NAND framework and other
+parts of the Linux kernel provide to real device drivers.  There are
+four interfaces:</P>
+
+<DL>
+  
+<DT>GPIO functions: <DD>the framework provides drivers with
+    the <CODE>gpio_set()</CODE> and <CODE>gpio_get()</CODE> functions
+    described in <A HREF="testrig.html">Subsection 2</A>.
+
+<DT>Jump table: <DD>upon initialization, the simplest device drivers
+    provide the framework with a jump table of driver operations.  The
+    framework then commands the device driver to operate the device by
+    invoking these functions through that jump
+    table. <A HREF="framework.html#jumptable">Subsection 4.1</A>
+    describes this interface further.
+
+<DT>Command interpreter: <DD>instead of a jump table, more complex
+    device drivers provide the framework with a pointer to a command
+    interpreter function.  The framework then commands the device
+    driver to operate the device by providing this command interpreter
+    function with a sequence of
+    instructions.  <A HREF="framework.html#interpreter">Subsection
+    4.2</A> describes this interface further.
+
+<DT>Device Information Base: <DD>the most complex device drivers add a
+    subgraph of nodes describing their device and its capabilities to
+    a complex graph structure called the Device Information Base
+    (DIB).  These device drivers share the DIB with the framework;
+    both components are responsible for leaving the DIB in a
+    well-formed state after each
+    update.  <A HREF="framework.html#dib">Subsection 4.3</A> describes
+    this interface further.
+
+</DL>
+    
+<A NAME="jumptable">
+<H2>4.1.  Function call through jump table</H2>
+</A>
+
+<A HREF="framework.html#table6">Table 6</A> describes the jump table
+functions.  This function call through jump table composition pattern
+represents a legacy interface supported by the real-world Linux
+kernel's NAND framework; its jump table can be found
+in <CODE>mtd/rawnand.h:struct nand_legacy</CODE>.
+
+<P>To operate the emulated NAND storage device, test suites must cause
+the framework to call the functions in this jump table in a manner
+that follows the driver-device protocol described in Section 3.  For
+example, to read data from a pair of two contiguous device pages, the
+test suite would make this series of calls through the jump table:</P>
+
+<OL>
+  
+<LI>One call to <CODE>set_register()</CODE> to set the device's
+    command register to <CODE>c_read_setup</CODE>.
+
+<LI> A sequence of three calls to <CODE>set_register()</CODE> to write
+     each byte of the three-byte location to begin reading from to the
+     device's address register.
+
+<LI> One call to <CODE>set_register()</CODE> to set the device's
+     command register to <CODE>c_read_execute</CODE>, prompting the
+     device to read the first page of data from its storage to its
+     cache.
+
+<LI> One call to <CODE>wait_ready()</CODE> to wait for the device to
+     finish reading from storage.
+
+<LI> One call to <CODE>read_buffer()</CODE> to read the first page's
+     data from the device's cache into the test suite's buffer.
+
+<LI> One call to <CODE>set_register()</CODE> to set the device to read
+     the second page of data from its storage to its cache.
+
+<LI> One call to <CODE>wait_ready()</CODE> to wait for the device to
+     finish reading from storage.
+
+<LI> One call to <CODE>read_buffer()</CODE> to read the second page's
+     data from the device's cache into the test suite's buffer.
+
+</OL>
+
+<P>Test suites must ask the framework to make a similar series of
+calls through the driver's jump table to properly implement write and
+erase tasks.</P>
+
+<A NAME="interpreter">
+<H2>4.2.  Command interpreter</H2>
+</A>
+
+<P>More complex device drivers to provide the framework with a
+function that implements an interpreter for operations (that is,
+programs) consisting of a series of instructions drawn from a simple
+command language and their
+arguments.  <A HREF="framework.html#table7">Table 7</A> contains the
+grammar for that command language.  Once registered, the framework can
+operate the device by calling this parser function and providing it
+with an array of commands and arguments in that language.  This
+composition pattern represents the <CODE>exec_op()</CODE> functions
+that many real-world Linux raw NAND device drivers provide to the
+real-world Linux NAND framework.</P>
+
+<P>As with the function call through jump table composition pattern, test
+suites must submit operations to the interpreter that follow the
+device-driver protocol described in <A HREF="device.html">Section
+3</A>. For example, to read data from a pair of two contiguous device
+pages, the test suite would submit an operation consisting of this
+series of instructions:</P>
+
+<OL>
+
+<LI> <CODE>IN_CMD c_read_setup</CODE> to write
+     the <CODE>c_read_setup</CODE> command to the device's command
+     register.
+
+<LI> <CODE>IN_ADDR 3, [ block, page, byte ]</CODE> to write the block,
+     page and byte parts of the location to begin reading to the
+     device's address register.
+
+<LI> <CODE>IN_CMD c_read_execute</CODE> to write
+     the <CODE>c_read_execute</CODE> command to the device's command
+     register, prompting it to read the first page from storage into
+     its cache.
+
+<LI> <CODE>IN_WAIT_READY 100</CODE> to cause the driver to sleep for
+     the 100 microseconds it takes for the device to read the first
+     page and then poll until the device is ready.
+
+<LI> <CODE>IN_DATA_OUT length bufferaddress</CODE> to cause the driver
+     to read <CODE>length</CODE> bytes from the device's data register
+     into the test suite buffer starting
+     at <CODE>bufferaddress</CODE>.
+
+<LI> <CODE>IN_CMD c_read_execute</CODE> to write
+     the <CODE>c_read_execute</CODE> command to the device's command
+     register, prompting it to read the second page from storage into
+     its cache.
+
+<LI> <CODE>IN_WAIT_READY 100</CODE> to cause the driver to sleep for
+     the 100 microseconds it takes for the device to read the second
+     page and then poll until the device is ready.
+
+<LI> <CODE>IN_DATA_OUT length bufferaddress</CODE> to cause the driver
+     to read <CODE>length</CODE> bytes from the device's data register
+     into the test suite buffer starting
+     at <CODE>bufferaddress</CODE>.
+
+</OL>
+
+<P>Note that the above grammar permits operations composed of any
+instructions in any order.  However, the emulated NAND storage device
+expects only certain instructions in certain orders, as described in
+<A HREF="device.html">Section 3</A>.  Operations that violate those
+expectations will drive the device into a bug state.  Like this
+permissive grammar, real-world Linux device
+driver <CODE>exec_op()</CODE> functions will accept operations with
+incorrectly ordered instructions.  They rely on the NAND framework and
+higher-level components to emit operations that will not confuse the
+device.</P>
+
+<A NAME="dib">
+<H2>4.3.  Shared device information base data structure</H2>
+</A>
+
+<P>Only the most complex device drivers will describe their device and
+its capabilities by modifying a Driver Information Base (DIB) data
+structure that is shared between the device driver and framework
+emulator.  Like the Linux kernel's Device Tree (DT), the DIB is a
+graph of nodes in links that, to be well-formed, must obey rules
+concerning the arrangement of nodes of particular types, the links
+between those nodes, and the values of node reference count fields.
+Both the device driver and the framework emulator must ensure they
+leave the DIB in a well-formed state after modifying it.</P>
+
+<P><A HREF="framework.html#figure2">Figure 2</A> contains a diagram of
+an example DIB.  The DIB is a linked list of Device nodes, each
+describing a NAND storage device.  Each NAND storage device consists
+of exactly one controller chip and one or more storage chips.  The
+diagram shows examples of devices with three, two, and one storage
+chip.  Each Device node points to one and only one Controller Chip
+node.  Each Controller Chip node has a linked list of Storage Chip
+nodes.  There are double links from the Controller Chip node to the
+first and last nodes in the Storage Chip list.</P>
+
+<P>The nodes themselves have the following fields:</P>
+
+<DL>
+
+<DT>Device: <DD>a pointer to a string containing a make and model name
+    for the device.
+
+<DT>Controller chip: <DD>the number of storage chips and a pointer to
+    the driver's command interpreter similar to the foxtrot driver.
+
+<DT>Storage chip: <DD>the number of blocks, the number of pages per
+    block, and the number of bytes per page.
+
+</DL>
+
+<P>In addition to the fields above and the links shown in the diagram,
+each node has a reference count field.</P>
+
+<HR>
+<CENTER>
+<A NAME="table6"
+<P><EM>Table 6 - Device driver to framework jump table interface.</EM><P>
+</A>
+</CENTER>
+
+<PRE WIDTH="80">
+set_register(register, value)
+</PRE>
+
+<P>This function enables the framework to set the emulated NAND
+storage device's registers to particular values;
+the <CODE>register</CODE> parameter indicates which register,
+the <CODE>value</CODE> parameter indicates the value to set.  It has
+no return value.</P>
+
+<PRE WIDTH="80">
+read_buffer(buffer, length)
+</PRE>
+
+<P> This function enables the framework to read data from the emulated
+NAND storage device into a buffer.  The <CODE>buffer</CODE> parameter
+indicates the buffer to receive the data; the <CODE>length</CODE>
+parameter indicates the number of bytes to read.  The test suite
+should take care to ask <CODE>read_buffer()</CODE> to read only within
+the bounds of a single emulated NAND storage device page;
+asking <CODE>read_buffer()</CODE> to cross a page boundary represents
+an error that will result in undefined behavior.  This function
+returns -1 on error, otherwise the number of bytes read.</P>
+
+<PRE WIDTH="80">
+write_buffer(buffer, length)
+</PRE>
+
+<P>This function is similar to <CODE>read_buffer()</CODE> except that
+it writes data to the device rather than reading data from the device.
+
+<PRE WIDTH="80">
+wait_ready(timeout)
+</PRE>
+
+<P>This function causes the device driver to poll a busy emulated NAND
+storage device until the device becomes ready.  It takes a timeout
+interval in microseconds.  This function returns 0 to indicate the
+device is ready or -1 to indicate the device did not become ready
+within the timeout interval.</P>
+
+
+<HR>
+<CENTER>
+<A NAME="table7">
+<P><EM>Table 7 - Device driver to framework command grammar interface.</EM></P>
+</CENTER>
+
+<PRE WIDTH="80">
+; An "operation" is a sequence of "instructions."  In the real
+; world, Linux represents this abstraction with a struct
+; nand_operation.
+OPERATION	->	COUNT	; count of instructions
+       		INSTRUCTION+	; array of instructions
+
+; An "instruction" is a an "instruction type" - essentially an
+; opcode followed by whatever arguments are needed by that type.
+; In the real world, Linux represents this abstraction with a
+; struct nand_op_instr.
+INSTRUCTION	->	IN_CMD        OPCODE
+		; IN_CMD writes OPCODE to the device's
+		; command register.
+	|	IN_ADDR       NUM ADDRESSBYTES
+		; IN_ADDDR loops over a NUM-long ADDRESSBYTES
+		; array of bytes and writes each one to the
+		; device's address register.
+	|	IN_DATA_IN    LENGTH BUFFERADDRESS
+		; IN_DATA_IN writes LENGTH bytes from the
+		; buffer at BUFFERADDRESS to the data
+		; register.  (Corresponds to "program".)
+	|	IN_DATA_OUT   LENGTH BUFFERADDRESS
+		; IN_DATA_OUT reads LENGTH bytes from the
+		; device's data register and stores them to
+		; the buffer at BUFFERADDRESS. (Corresponds
+		; to "read".)
+	|	IN_WAIT_READY TIMEOUT
+		; IN_WAIT_READY causes the driver to wait
+		; until (a) the device becomes ready, or 
+		;(b) timeout microseconds have elapsed.
+
+OPCODE	->	c_read_setup    | c_read_execute
+	|	c_program_setup | c_program_execute
+	|	c_erase_setup.  | c_erase_execute
+
+NUM	->	; unsigned integer value, always 3.
+ADDRESSBYTES	->	; array of block, page, byte address values
+LENGTH	->	; unsigned integer value <= device page size.
+BUFFERADDRESS	->	; address of buffer to provide/receive bytes.
+TIMEOUT	->	; unsigned integer delay in microseconds.
+</PRE>
+<HR>
+
+
+<CENTER>
+<IMG SRC="figs/figure-DIB.png" WIDTH="50%">
+<A NAME="figure2">
+<P><EM> Figure 2 - Example Device Information Base (DIB) with
+entries for three devices, one with three storage chips, one with two,
+and one like the device emulator with only one.</EM></P>
+</CENTER>
+
+
+<HR>
+
+<P><A HREF="manual.html">          Table of contents</A></P>
+
+</BODY></HTML>

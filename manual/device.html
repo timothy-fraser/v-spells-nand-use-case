@@ -1,0 +1,624 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0 Strict Level 1//EN">
+<HTML>
+  <HEAD>
+    <TITLE>V-SPELLS Use Case 2 User Manual</TITLE>
+  </HEAD><BODY>
+<H1>3.  Device emulator</H1>
+
+<P>The device emulator component of the test rig emulates a simple NAND
+flash storage device.  It emphasizes features that impact the design
+of Domain-Specific Languages (DSLs) for device drivers and the proofs
+that drivers reimplemented in those DSLs remain compatible with the
+legacy drivers they intend to replace.  These features include:</P>
+
+<UL>
+<LI> message passing between the driver and device via IO registers,
+<LI> a protocol where commands, parameters, and data must appear in a
+     particular order and with a particular timing, and
+<LI> device cursor and cache state variables that are not visible in
+     the driver source yet nonetheless impact the results of its
+     computations.
+</UL>
+
+<P>The device presents drivers with an interface that resembles the one
+the Linux kernel presents to its device drivers, as opposed to the
+lower-level abstractions described in the data sheets of typical
+real-world storage devices:</P>
+
+<UL>
+<LI> the device's GPIO pins appear as function calls, and
+<LI> the device's Input/Output (IO) registers appear as addresses in
+     the device driver's address space that have special properties.
+</UL>
+
+<P>The device emulator also exposes some further features that are
+typical of real-world NAND flash devices:</P>
+
+<UL>
+<LI> its storage is logically divided into regions called erase
+     blocks.  These erase blocks contain logical programmable pages,
+     which in turn contain storage bytes,
+<LI> drivers may read bytes from storage, and
+<LI> drivers may write data to unused pages by programming them and
+     return used pages to an unused state by erasing entire blocks.
+</UL>
+
+<P>The device emulator makes no attempt to emulate further details of
+real-world NAND flash devices.  In particular, repeated program
+operations do not wear out the storage media.</P>
+
+<P> <A HREF="device.html#statemachine">Subsection 3.1</A> describes
+the device in terms of a finite state machine that transitions between
+states when prompted by the driver via its GPIO and IO register
+interfaces.  <A HREF="device.html#read">Subsection 3.2</A> describes the portion of the message
+passing protocol the driver uses to read data from the device.
+<A HREF="device.html#program">Subsection 3.3</A> describes the portion
+for programming (that is, writing data to) the
+device.  <A HREF="device.html#erase">Subsection 3.4</A> describes the
+portion for erasing data from the
+device.  <A HREF="device.html#reset">Subsection 3.5</A> describes how
+the driver determines if the device is ready or busy and how it resets
+the device to its initial
+state.  <A HREF="device.html#dummy">Subsection 3.6</A> concludes this
+section with by explaining the presence of a
+special <CODE>c_dummy</CODE> command and how the test rig uses it to
+clarify messages that might otherwise be ambiguous.
+
+<A NAME="statemachine">
+<H2>3.1.  Device state machine</H2>
+
+<P>The device emulator implements a finite state machine that tracks its
+primary state in several private state variables that are not directly
+visible to other test rig components.</P>
+
+<DL>
+
+<DT>Storage: <DD>The device emulator's notional storage device
+provides 16MB of storage.  This storage is backed by RAM; data stored
+does not persist across separate runs of the test rig.  This storage
+is logically divided into 256 erase blocks.  These erase blocks are
+further divided into 256 programmable pages.  Each programmable page
+can store 256 bytes of data.
+
+<DT>Cache: <DD>When the driver asks the device to read data from its
+storage, the device slowly reads the data into a cache.  Once the data
+is cached, it rapidly serves the data from the cache to the driver.
+Similarly, when the driver asks the device to program (that is, write)
+data to its storage, the device rapidly receives the data from the
+driver into the cache.  Once the data is cached, the driver slowly
+programs it to its storage.  The cache is one programmable page in
+size.
+
+<DT>Cursor: <DD>The device uses a single cursor to index both its
+storage and cache during read and program operations.  This cursor is
+a 3-byte-wide unsigned integer.  Logically, the most significant of
+these three bytes indicates the erase block, the middle byte indicates
+the programmable page, and the least significant byte indicates the
+byte in storage.  The cursor's least significant byte also indicates
+the byte in the cache.
+
+<DT>Deadline: <DD>In real-world NAND flash devices, operations that
+reading data from storage into cache and programming storage from
+cache take time to complete.  The emulator provides this timing
+feature; the feature uses a deadline state variable remember the
+system clock time at which the most recent read or program operation
+will complete.
+
+<DT>Machine state: <DD>The device emulator is a state machine that,
+once initialized at test rig startup, changes its state only in
+response to prompts by the device driver.  The device emulator uses
+this variable to keep track of its present machine state.
+</DL>
+
+<P>On startup, the test rig initializes the device with all storage
+bytes, the cache, and deadline state variables cleared to 0, and
+machine state set to <CODE>ms_initial_state</CODE>.  The device driver
+component prompts the device to move from machine state to machine
+state with one of the following actions:</P>
+
+<UL>
+  <LI> a read or write to its ioregisters variable,
+  <LI> a call to its <CODE>gpio_get()</CODE> function, or
+  <LI> a call to its <CODE>gpio_set()</CODE> function.
+</UL>
+    
+<P>When the driver prompts the device with one of these actions, the
+device decides what processing to do based on its current machine
+state, does that processing, and moves to a new machine state.</P>
+
+<P><A HREF="device.html#table1">Table 1</A> describes the initial
+<CODE>ms_initial_state</CODE> machine state and how the device
+responds to driver prompts while in that machine state.  It also
+describes an <CODE>ms_bug</CODE> state to aid in driver debugging.
+The device enters its <CODE>ms_bug</CODE> machine state when a buggy
+driver provides incorrect prompts.  It remains in that machine state
+until the driver resets it to its initial state.</P>
+
+<A NAME="read">
+<H2>3.2.  Reading data from the device</H2>
+</A>
+
+<P>Drivers can read data from the device with the following sequence
+of actions:</P>
+
+<OL>
+<LI> Set the command IO register to <CODE>c_read_setup</CODE>.  This
+     command informs the device that the driver will specify the
+     address of the first byte to read in the following three steps.
+
+<LI> Set the address IO register to the number of the erase block to
+     read.  This command causes the device to store the block number
+     in its private cursor.
+
+<LI> Set the address IO register to the number of the page in that
+     block to read.  This command causes the device to store the page
+     number in its private cursor.
+
+<LI> Set the address IO register to the number of the first byte in
+     that page to read.  This command causes the device to store the
+     byte number in its private cursor.  After this third address
+     command is complete, the device's cursor contains the entire
+     three-byte address of the first byte to read.
+
+<LI> Set the command IO register to <CODE>c_read_execute</CODE>.  This
+     command causes the device to begin reading the entire page
+     specified by its private cursor into its private cache.  Note
+     that it reads the entire page into cache with the page's first
+     byte at the cache's first byte, regardless of the value of the
+     cursor's byte number byte.
+
+<LI> It takes time for the device to read the entire page into its
+     cache.  The device will be busy during the read and return to
+     ready once it is complete.  The driver will poll the device's
+     status until it becomes ready.
+
+<LI> Once ready, the driver will read the value of the data IO
+     register one or more times.  Upon each read, the device will set
+     the data IO register to the value of the cache byte corresponding
+     to the byte number portion of its cursor, incrementing the cursor
+     as it goes to index through the cache.
+</OL>
+  
+<P>The portion of the cache the driver will read depends on how it set
+the byte number and how many times it reads from the data IO register.
+If the driver sets the byte number to zero, it will begin by reading
+the first byte in the cache.  If it sets the byte number to some other
+value, it will begin reading somewhere else in the cache.  It reads a
+number of cache bytes equal to the number of times it reads the data
+IO register.</P>
+
+<P>The device passes through the machine states described
+in <A HREF="device.html#table2">Table 2</A> to support this series of
+actions.  Once the driver has read the last byte it wishes to read, it
+has several options:</P>
+
+<UL>
+  
+<LI> The driver can read from the next consecutive page by returning
+     to step #5 and writing <CODE>c_read_execute</CODE> to the command
+     IO register.  When the driver reads the last byte from one page,
+     step #7 leaves the cursor pointing to the first byte in the next
+     consecutive page. Returning to step #5 causes the device to load
+     that next page into its cache.  The device will wrap its cursor
+     back to zero if a read increments it beyond the last page
+     storage.
+
+<LI> The driver can begin programming pages by writing the
+     <CODE>c_program_setup</CODE> command to the command IO register.
+
+<LI> The driver can begin erasing blocks by writing
+     the <CODE>c_erase_setup</CODE> command to the command IO
+     register.
+
+</UL>
+
+<A NAME="program">
+<H2>3.3.  Programming data to the device</H2>
+</A>  
+
+<P>The driver can program individual full pages.  The driver may use
+the cursor to specify values for only some contiguous run of bytes in
+the page.  Bytes not explicitly specified by the driver will be
+implicitly zero (0x00).  To program some or all data on a particular
+page, the driver makes the following actions:</P>
+
+<OL>
+  
+<LI> Set the command IO register to <CODE>c_program_setup</CODE>.
+     This command informs the device that the driver will specify the
+     block and page number of the page it wishes to program and the
+     number of the first byte in that page for which it intends to
+     specify a value.
+
+<LI> Set the address IO register to the number of the erase block to
+     program.  This command causes the device to store the block
+     number in its private cursor.
+
+<LI> Set the address IO register to the number of the page in that
+     block to program.  This command causes the device to store the
+     page number in its private cursor.
+
+<LI> Set the address IO register to the number of the first byte in
+     that page for which the driver wishes to specify a value.  This
+     command causes the device to store the byte number in its private
+     cursor.  After this third address command is complete, the
+     device's cursor contains the entire three-byte address of the
+     first byte to specify.
+
+<LI> Once ready, the driver will write the value of the data IO
+     register one or more times.  Upon each write, the device will set
+     the cache byte indicated by the cursor to the value of the data
+     IO register, incrementing the cursor as it goes to index through
+     the cache.
+
+<LI> Set the command IO register to <CODE>c_program_execute</CODE>.
+     This command causes the device to begin programming the entire
+     page specified by its private cursor to contain the present
+     contents of the cache.  Note that it programs the entire page
+     into storage with the page's first byte at the cache's first
+     byte, regardless of the value of the cursor's byte number byte.
+
+<LI> It takes time for the device to program the entire page into its
+     cache.  The device will be busy during programming and return to
+     ready once it is complete.  The driver will poll the device's
+     status until it becomes ready before attempting another
+     operation.
+
+</OL>
+
+<P>The device passes through the machine states described
+in <A HREF="device.html#table3">Table 3</A> to support this series of
+actions.  Once the driver has patiently waited for the device to
+return to ready status, it has several options:</P>
+
+<UL>
+
+<LI> After the device finishes programming one page in step #7, it
+     leaves its cursor pointing to the start of the next consecutive
+     page.  The driver can specify values to program to this page by
+     returning to step #5 and writing values to the data IO register.
+     The device will wrap its cursor back to zero if a program
+     increments it beyond the last page of storage.
+
+<LI> The driver can begin reading bytes from the device by writing the
+     <CODE>c_read_setup</CODE> command to the command IO register.
+
+<LI> The driver can begin erasing blocks by writing
+     the <CODE>c_erase_setup</CODE> command to the command IO
+     register.
+
+</UL>
+
+<A NAME="erase">
+<H2>3.4.  Erasing device storage blocks</H2>
+</A>
+
+<A>The driver can erase all the pages in erase blocks.  This erasure
+clears all of the bytes in those pages to all-zeroes (0x00).  To erase
+some or all of the erase blocks in storage, the driver makes the
+following actions:</A>
+
+<OL>
+
+<LI> Set the command IO register to <CODE>c_erase_setup</CODE>.  This
+     command informs the device that the driver will specify the block
+     it wishes to erase.
+
+<LI> Set the address IO register to the number of the erase block to
+     erase.  This command causes the device to store the block number
+     in its private cursor.
+
+<LI> Set the command IO register to <CODE>c_erase_execute</CODE>.
+     This command causes the device to begin erasing the entire erase
+     block specified by its private cursor.
+
+<LI> It takes time for the device to erase the entire block.  The
+     device will be busy during erasure and return to ready once it is
+     complete.  The driver will poll the device's status until it
+     becomes ready before attempting another operation.
+
+</OL>
+  
+<P>The device passes through the machine states described
+in <A HREF="device.html#table4">Table 4</A> to support this series of
+actions.  Once the driver has patiently waited for the device to
+return to ready status, it has several options:</P>
+
+<UL>
+  
+<LI> After the device finishes erasing one block in step #4, it leaves
+     its cursor pointing to the start of the next consecutive block.
+     The driver can erase the next block by to step #3.  The device
+     will wrap its cursor back to zero if an erase increments it
+     beyond the last block of storage.
+
+<LI> The driver can begin reading bytes from the device by writing the
+     <CODE>c_read_setup</CODE> command to the command IO register.
+
+<LI> The driver can begin programming pages by writing the
+  <CODE>c_program_setup</CODE> command to the command IO register.
+
+</UL>
+
+<A NAME="reset">
+<H2>3.5.  Distinguishing busy and ready, resetting the device,
+    selecting chips</H2>
+</A>
+
+<P>After the driver uses one of the <CODE>_execute</CODE commands to
+instruct the device to begin a read, program, or erase operation, the
+device will be busy for a considerable amount of time.  As noted in
+the previous subsections, the driver must poll the device until it
+once again becomes ready before interacting with the device further.
+Drivers take the following steps to poll:</A>
+
+<OL>
+
+<LI> Sleep for some driver-specific constant amount of time that
+     seems likely to cover most or all of the device's busy period.
+
+<LI> Awaken and use <CODE>get_gpio(pn_status)</CODE> to query the
+     status of the device.  If the device is still busy, the driver
+     will sleep for a short period of time and repeat this step.  If
+     ready, it will complete the polling procedure and move on.
+</OL>
+  
+<P>Buggy drivers may cause the device to enter a confused state from
+which it cannot make useful progress.  In these cases, drivers may use
+<CODE>set_gpio(pn_reset, 1)</CODE> to cause the device to reset itself
+to its initial state.</P>
+
+<A HREF="device.html#table5">Table 5</A> describes how the device
+reacts to <CODE>gpio_get()</CODE> and <CODE>gpio_set()</CODE> calls
+while it is in any machine state.
+
+<A NAME="dummy">
+<H2>3.6.  Note on command IO register</H2>
+</A>  
+
+<P>This note explains the lines in several state machine tables that
+set the command IO register to <CODE>c_dummy</CODE>.  Ideally, the
+driver would be the only component that writes to the command IO
+register; the device would read from it, but never write.  Although
+our IO register watchpoint activates the device emulator whenever the
+driver reads or writes an IO register, it does not inform the device
+emulator whether the driver read or wrote an IO register or identify
+the IO register involved.  In most cases the device emulator can
+deduce those details from its present state and from noting what
+register values have changed since it last examined them.  However,
+there are some cases where the device emulator must be able to
+determine that the driver has written the same command to the command
+IO register twice in a row.  The device emulator
+writes <CODE>c_dummy</CODE> to the command IO register after the
+device writes the command for the first time.  The device emulator can
+subsequently deduce that the driver has written that command a second
+time when it observes that the command IO register contains that
+command again rather than <CODE>c_dummy</CODE>.  This use
+of <CODE>c_dummy</CODE> is an artifact of our debugger-based
+implementation; it is not meant to represent a feature of real-world
+NAND flash storage devices.</P>
+
+
+<HR>
+<CENTER>
+  <A NAME="table1">
+    <P><EM>Table 1 - Device initial and idle machine state.  Common
+    actions.</EM></P>
+</CENTER>
+
+<PRE WIDTH="80">
+Machine state ms_initial_state:
+  On ioregisters read/write:
+    Case c_read_setup:
+      Set machine state to ms_read_awaiting_block_address.
+    Case c_program_setup:
+      Set machine state to ms_program_awaiting_block_address.
+    Case c_erase_setup:
+      Set machine state to ms_erase_awaiting_block_address.
+    Default:
+      Set state to ms_bug.
+
+State ms_bug:
+  On ioregisters read/write:
+    Remain in state ms_bug.
+</PRE>
+
+<P>Additional cases for the Else switch on command IO register clause of
+ms_read_providing_data, ms_program_accepting_data, and
+ms_erase_awaiting_execute:</P>
+
+<PRE WIDTH="80">
+      Case c_read_setup:
+        Clear cursor, deadline, cache.
+        Set machine state to ms_read_awaiting_block_address.
+      Case c_program_setup:
+        Clear cursor, deadline, cache.
+        Set machine state to ms_program_awaiting_block_address.
+      Case c_erase_setup:
+        Clear cursor, deadline, cache.
+        Set machine state to ms_erase_awaiting_block_address.
+</PRE>
+
+<HR>
+<CENTER>
+  <A NAME="table2">
+    <P><EM>Table 2 - Device machine states for reading.</EM></P>
+  </A>
+</CENTER>
+<PRE WIDTH="80">
+State ms_read_awaiting_block_address:
+  On ioregisters read/write:
+    If system clock < deadline variable
+       Or command IO register is not c_read_setup
+    Then set machine state to ms_bug. 
+    Else
+      Set block byte of cursor to address IO register.
+      Set machine state to ms_read_awaiting_page address.
+
+State ms_read_awaiting_page_address:
+  On ioregisters read/write:
+    If system clock < deadline variable
+       Or command IO register is not c_read_setup
+    Then set machine state to ms_bug. 
+    Else
+      Set page byte of cursor to address IO register.
+      Set machine state to ms_read_awaiting_byte_address.
+
+State ms_read_awaiting_byte_address:
+  On ioregisters read/write:
+    If system clock < deadline variable
+       Or command IO register is not c_read_setup
+    Then set machine state to ms_bug. 
+    Else
+      Set byte number byte of cursor to address IO
+      register.  Set machine state to ms_read_awaiting_execute.
+
+State ms_read_awaiting_execute:
+  On ioregisters read/write:
+    If system clock < deadline variable
+       Or command IO register is not c_read_execute
+    Then set machine state to ms_bug. 
+    Else
+      Set deadline to current system clock time plus
+      READ_PAGE_DURATION.
+      Set machine state to ms_read_providing_data.
+      Set command IO register to c_dummy.  (See Note 3.6.)
+
+State ms_read_providing_data:
+  On ioregisters read/write:
+    If system clock < deadline variable
+    Then set machine state to ms_bug. 
+    Else switch on command IO register
+      Case c_dummy:
+        Set data register to cache byte indicated by
+        cursor.  Increment cursor.  Wrap cursor to remain
+        in storage.   
+        Keep machine state set to ms_read_providing_data.
+      Case c_read_execute:
+        Set deadline to current system clock time plus
+        READ_PAGE_DURATION.
+        Set machine state to ms_read_providing_data.
+        Set command IO register to c_dummy.  (See Note 3.6.)
+        Keep machine state set to ms_read_providing_data.
+</PRE>
+
+<HR>
+<CENTER>
+  <A NAME="table3">
+    <P><EM>Table 3 - Device machine states for programming</EM></P>
+  </A>
+</CENTER>
+
+<PRE WIDTH="80">
+State ms_program_awaiting_block_address:
+  On ioregisters read/write:
+    If system clock < deadline variable
+       Or command IO register is not c_program_setup
+    Then set machine state to ms_bug. 
+    Else
+      Set block byte of cursor to address IO register.
+      Set machine state to ms_program_awaiting_page address.
+
+State ms_program_awaiting_page_address:
+  On ioregisters read/write:
+    If system clock < deadline variable
+       Or command IO register is not c_program_setup
+    Then set machine state to ms_bug. 
+    Else
+      Set page byte of cursor to address IO register.
+      Set machine state to ms_program_awaiting_byte_address.
+
+State ms_program_awaiting_byte_address:
+  On ioregisters read/write:
+    If system clock < deadline variable
+       Or command IO register is not c_program_setup
+    Then set machine state to ms_bug. 
+    Else
+      Set byte number byte of cursor to address IO
+      register.  Set machine state to ms_program_accepting_data.
+      Set command IO register to c_dummy.  (See note 3.6.)
+
+State ms_program_accepting_data:
+  On ioregisters read/write:
+    If system clock < deadline variable
+    Then set machine state to ms_bug. 
+    Else switch on command IO register
+      Case c_dummy:
+        Set byte of cache to value of data IO register.
+        Increment cursor.  Wrap cursor to remain in page.
+      Case c_program_execute:
+        Set deadline to current system clock time plus
+        WRITE_PAGE_DURATION. Set storage page indicated by
+        cursor to the values in cache.  Set cursor to the
+        start of the next consecutive page, wrapping to 0
+        as needed to stay within storage.
+        Clear cache to all-zeroes.
+        Set command IO register to c_dummy.  (See note 3.6.)
+        Set machine state to ms_program_accepting_data.
+</PRE>
+
+
+<HR>
+<CENTER>
+  <A NAME="table4">
+    <P><EM>Table 4 - Device machine states for erasing</EM></P>
+  </A>
+</CENTER>
+<PRE WIDTH="80">
+State ms_erase_awaiting_block_address:
+  On ioregisters read/write:
+    If system clock < deadline variable
+       Or command IO register is not c_erase_setup
+    Then set machine state to ms_bug. 
+    Else
+      Set block byte of cursor to address IO register.
+      Set machine state to ms_erase_awaiting_execute.
+
+State ms_erase_awaiting_execute:
+  On ioregisters read/write:
+    If system clock < deadline variable
+    Then set machine state to ms_bug. 
+    Else switch on command IO register
+      Case c_erase_execute:
+        Clear the storage block indicated by the cursor
+        to all zeroes (0x00).  Set deadline to system clock
+        time plus ERASE_BLOCK_DURATION.  Set the cursor to
+        the start of the next consecutive block, wrapping
+        to 0 as needed to stay within storage.  
+        Set machine state to ms_erase_awaiting_execute.
+        Set command IO register to c_dummy.  (See note 3.6.)
+</PRE>
+
+
+<HR>
+<CENTER>
+  <A NAME="table5">
+    <P><EM>Table 5 - GPIO actions common to all machine states.</EM></P>
+  </A>
+</CENTER>
+
+<P>All machine states have the following additional common GPIO actions:</P>
+
+<PRE WIDTH="80">
+  On gpio_get(pin number) call:
+    Case pn_status:
+      If system clock < deadline then cause gpio_get to return 1 to
+      Indicate busy, else cause it to return 0 to indicate ready.
+    Case pn_reset:
+      Getting the pn_reset pin's value is a meaningless operation.
+      Cause gpio_get to return 0.
+  
+  On gpio_set(pin number, value) call:
+    Case pn_status:
+      Setting the pn_status pin is a meaningless operation.
+    Case pn_reset:
+      Clear cursor, deadline, cache.
+      Set machine state to ms_initial_state.
+      Delay for RESET_DURATION.
+</PRE>
+
+<HR>
+
+<P><A HREF="manual.html">          Table of contents</A></P>
+
+</BODY></HTML>

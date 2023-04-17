@@ -1,0 +1,70 @@
+
+SUBJECT:
+
+Use case manual
+
+OBSERVED:
+
+Use case manual is a PDF file.  This is a binary format, and the Git
+source control system works best on text formats that it can easily
+diff.  If we update the manual often, I believe the git repository's
+history metadata will become bloated with many copies of old versions
+of the manual's PDF file.
+
+EXPECTED:
+
+We might be better off if we converted the manual into some kind of
+text-based format, if we can find one that will present the pseudocode
+and other document elements properly.
+
+ANALYSIS:
+
+A better format would have these properties:
+
+ - Text-based source so git can easily do diffs.  It's OK if we need
+   to extend the Makefile to build the manual.
+
+ - Formatting sufficient to do section headers, figures with images,
+   tables in monospaced font, captions for and references to figures
+   and tables.
+
+ - Ideally, no "unusual" software required to build or view the
+   manual, at least on a GNU/Linux system.
+   
+
+Possible alternate formats:
+
+ - GitHub Markdown
+
+   It looks like Markdown can do what we need except perhaps for
+   symbolic cross-references to figures and tables.  However, you'd
+   need some kind of program to translate the manual from Markdown to
+   HTML and then another program (presumably a web browser) to render
+   that HTML.
+
+ - Groff (roff, troff)
+
+   To my astonishment, you can embed postscript images in groff files
+   that are destined to be rendered in PDF, and the tools required to
+   the build the PDF were installed by default on my dev machine.
+
+ - LaTeX
+
+   LaTeX will do what we need to properly format the document, but it
+   would require a latex-to-pdf toolchain to build the document.
+   Based on my dev machine, these tools aren't typically part of a
+   default GNU/Linux install, so arguably count as "unusual"
+   dependencies.
+
+ - HTML
+ 
+   Markdown gets translated to HTML, so HTML can do at least as much
+   as Markdown.  This seems to be the only option on my list that
+   doesn't require "building" the document; readers would simply view
+   it in a web browser.  An HTML version might not be as pretty as one
+   done in Groff or LaTeX, but if memory serves the experience of
+   marking up the doc will be less painful.
+
+HTML seems like the lowest-effort route to a good-enough result.
+Let's give it a try.  If it works, we can move on to other bugs that
+much sooner.

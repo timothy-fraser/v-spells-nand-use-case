@@ -1,0 +1,93 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0 Strict Level 1//EN">
+<HTML>
+  <HEAD>
+    <TITLE>V-SPELLS Use Case 2 User Manual</TITLE>
+  </HEAD><BODY>
+<H1>1.  Introduction</H1>
+
+<P>This is the user manual for Provatek, LLC's second "flaw fix via
+Domain-Specific Language (DSL)" V-SPELLS use case distribution.  This
+use case invites the V-SPELLS research teams to:</P>
+
+<OL>
+  <LI> examine a corpus of example legacy C-language device drivers
+    for an emulated raw NAND flash storage device that correctly
+    implement composition and loop structure patterns commonly found
+    in real Linux device drivers,
+
+  <LI> examine a corpus of example legacy device drivers that
+    demonstrate common implementation flaws,
+
+  <LI> invent one or more DSLs for implementing such device drivers,
+    
+  <LI> reimplement the legacy drivers in these new DSLs,
+    
+  <LI> argue that the new reimplementations are compatible with the
+    bug-free legacy drivers, and
+
+  <LI> demonstrate that the DSLs discourage or rule out the kinds of
+    flaws found in the buggy legacy drivers.
+</OL>
+
+<P>This use case distribution contains a test rig to support these
+activities.  The test rig is a user-mode C program for GNU/Linux
+operating systems on 64-bit Intel instruction set CPUs.  As shown in
+the diagram in <A HREF="introduction.html#figure1">Figure 1</A>, it
+consists of four components:</P>
+
+<DL>
+  <DT>Device emulator: <DD>an emulator for a simple raw NAND storage
+      device that presents device drivers with an interface that
+      resembles the one that the Linux kernel presents to real device
+      drivers.  This interface implements a message-passing
+      composition pattern based on Input/Output registers and General
+      Purpose Input/Output pins.  Section 3 describes this interface
+      in detail.
+
+  <DT>Framework emulator: <DD>an emulator that presents device drivers
+      with a collection of interfaces that resemble the ones the Linux
+      kernel's NAND framework presents to real device drivers.  Each
+      interface implements a different composition pattern: function
+      call through a jump table, instruction streams through a command
+      interpreter, and modifications to a shared data structure.
+      Section 4 describes these interfaces in detail.
+
+  <DT>Device driver: <DD>researchers can use the test rig's makefile
+      to build an executable that includes one device driver at a
+      time, choosing either one of the examples included in the
+      distribution or (with some modification) one of their own
+      DSL-based reimplementations.  The corpus of correct device
+      drivers demonstrates examples of several loop structure patterns
+      common to real device drivers; researchers interested in
+      automated program analysis and reasoning may find these to be an
+      interesting challenge.  Section 5 describes these loop structure
+      patterns.  It also provides a table that indicates which loop
+      structure and framework interface composition patterns each
+      example driver demonstrates.
+
+  <DT>Test suite: <DD>the makefile builds an executable that includes
+      a suite of functional tests appropriate for its configured
+      device driver.  Researchers can use these tests to demonstrate
+      at least partial compatibility between the legacy device drivers
+      and their DSL-based replacements.
+</DL>
+
+<P><A HREF="testrig.html">Section 2</A> presents the low-level details
+of how the device emulator works, how the test rig uses 64-bit Intel
+CPU hardware watchpoints and software breakpoints to mimic the
+semantics of real IO registers and GPIO pins, and how the test rig
+must consequently run as a pair of processes with one using the Ptrace
+debugging library to trace the other.  <A HREF="building.html">Section
+6</A> concludes this user manual with detailed instructions on
+building and executing the test rig.</P>
+
+<CENTER>
+  <P><IMG SRC="figs/figure-test-rig-architecture.png" WIDTH="50%"></P>
+  <P><A NAME="figure1"><EM>Figure 1 - Test rig architecture.</EM></A></P>
+</CENTER>
+
+<HR>
+
+<P><A HREF="manual.html">          Table of contents</A></P>
+
+</BODY></HTML>

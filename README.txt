@@ -71,17 +71,21 @@ be found in the manual included in the distribution.
 
 Contents of this distribution:
 
-README.txt - this file.
-manual.pdf - the user manual for this distro.  Start here.
-LICENSE    - the open source license for this distro and its docs.
+README.txt         - this file.
 
-Bugs       - a database of bugs for the last month of work on the test
-             rig.  Fixed bugs are in Bugs/Fixed.  Open bugs are in
-             Bugs/High, Bugs/Medium, and Bugs/Low, organized by
-             priority.
+manual/manual.html - the user manual for this distro.  Start here.
 
-Makefile   - Makefile for building the test rig and its test programs.
+LICENSE            - the open source license for this distro and its
+                     docs.
+
+Bugs               - a database of bugs for the last month of work on
+                     the test rig.  Fixed bugs are in Bugs/Fixed.
+                     Open bugs are in Bugs/High, Bugs/Medium, and
+                     Bugs/Low, organized by priority.
+
+Makefile           - Makefile for building the test rig and its test
+                     programs.
 
 device, driver, framework, tester, main - these directories hold the
-source for each of the test rig's components.
+                     source for each of the test rig's components.
 

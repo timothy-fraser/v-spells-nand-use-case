@@ -1,0 +1,97 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0 Strict Level 1//EN">
+<HTML>
+  <HEAD>
+    <TITLE>V-SPELLS Use Case 2 User Manual</TITLE>
+  </HEAD><BODY>
+<H1>6.  Building and running the test rig</H1>
+
+
+<P>The test rig is a user-mode C program for GNU/Linux operating systems
+on 64-bit Intel instruction set CPUs.  The test rig's source code
+includes several details specific to 64-bit Intel instruction set
+CPUs; the test rig will build only on GNU/Linux platforms with this
+kind of CPU.</P>
+
+<P>Test rig makefile's default target will build multiple executables,
+one for each example driver.  To build this default target, simply
+run:</P>
+
+<PRE>
+      make
+</PRE>
+
+<P>The makefile has specific targets for each example driver.  To build
+an executable for a specific driver, run make with the target named
+for that driver, for example:</P>
+
+<PRE>
+make test_alpha_0
+</PRE>
+
+<P>Researchers can extend the makefile to include similar specific
+targets for their own DSL-based driver reimplementations.</P>
+
+<P>Running a test rig executable runs the test suite for the configured
+driver.  For example:</P>
+
+<PRE>
+      ./test_alpha_0
+</PRE>
+
+<P>Note that you will need to terminate the tests for drivers with
+deliberate hanging bugs with ctrl-C.</P>
+
+
+<H2> 6.1.  A warning about debugging</H2>
+
+<P>The test rig's parent tracer process runs the device emulator and
+debugs the child tracee process using the Ptrace library.  The parent
+tracer receives a signal when the child tracee hits a hardware
+watchpoint on its emulated IO register and tries to puzzle out how to
+emulate an IO register read or write based mainly on the state of its
+simulated NAND storage device.  The child tracee process runs the
+driver.  If your driver has a bug that causes the child tracee to
+segmentation fault, the child tracee will not dump core.  Instead, the
+parent tracer, acting as a debugger, will get a signal indicating the
+child tracee has faulted.  The current version of the parent tracer
+will misinterpret this signal as watchpoint activation and do
+something unhelpful with it.</P>
+
+<P>In the best case, it will drive its emulated storage device into a bug
+state, report an error, and halt the test rig.  In the worst case, it
+will do <EM>something</EM> to the emulated storage device and wait patiently
+for the dead child tracee to proceed, causing the test rig to hang.</P>
+
+
+<H2>6.2.  A warning about instruction support</H2>
+
+<P>When the child tracee uses a mov instruction to read from the emulated
+IO register, the instruction moves the incorrect value present at that
+moment in the emulated IO register variable in its memory into one its
+general-purpose CPU registers.  It then passes control to the parent
+tracer device emulator via the hardware watchpoint.</P>
+
+<P>At that point, the parent tracer device emulator can correct the
+contents of the IO register in the child tracee's memory to reflect
+the value that would have been there on a real device.  However,
+because the CPU has already executed the child tracee's mov
+instruction to move the previous incorrect value into one of the child
+tracee's general-purpose CPU registers, the parent tracer device
+emulator must update the value in that register, as well.</P>
+
+<P>Identifying which register the mov instruction used requires the
+parent tracer device emulator to examine and decode the child tracee's
+mov instruction.  There are many forms of mov in the IA64 instruction
+set.  The current version of the device emulator supports only four
+forms: two that GCC used in our tests and two more that seemed to be
+likely alternates.  If your compiler uses a different form of mov, the
+device emulator will report an error and halt.  The error output will
+include the bytes of the unsupported instruction; including those
+bytes in a bug report will aid in adding support.</P>
+
+
+<HR>
+
+<P><A HREF="manual.html">          Table of contents</A></P>
+
+</BODY></HTML>

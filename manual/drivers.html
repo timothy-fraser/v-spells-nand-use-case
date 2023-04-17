@@ -1,0 +1,203 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0 Strict Level 1//EN">
+<HTML>
+  <HEAD>
+    <TITLE>V-SPELLS Use Case 2 User Manual</TITLE>
+  </HEAD><BODY>
+<H1>5.  Device drivers</H1>
+
+<P>The corpus of example drivers contains a series of drivers ordered
+alphabetically by name: Alpha, Bravo, and so on.  The series of names
+skips some letters to permit the potential insertion of additional
+driver examples in the future.  The "_0" variant of each driver
+correctly implements a particular combination of composition and loop
+patterns found in real Linux NAND device drivers.  Those with higher
+numbers implement flaws.  The following subsections describe the
+composition patterns and loop patterns of each _0 driver, the
+properties a developer would likely want to prove regarding those
+patterns to support an argument that a DSL-based replacement was
+compatible with the legacy C version, and describe the bugs in the
+accompanying flawed examples that invalidate those properties.</P>
+
+<H2>5.1.  The Alpha driver</H2>
+
+<P>The Alpha_0 driver correctly implements the jump table composition
+pattern with the framework.  It transfers data to and from the device
+using loop structures that conform to the pattern found most often in
+real Linux NAND drivers: a simple loop that decrements a count of
+bytes remaining to be transferred and increments a pointer to the
+driver-side buffer, similar to the <CODE>readsb()</CODE>
+and <CODE>writesb()</CODE> macros from <CODE>asm-generic/io.h</CODE>
+used by many real-world drivers.  The data transfer loop structures
+have these properties:</P>
+
+<UL>
+  <LI> The data transfer loop always terminates.
+  <LI> It transfers the requested number of bytes.
+  <LI> It transfers them in the proper order.
+</UL>
+    
+<P>The Alpha_0 driver waits for the device to become ready with a
+simple loop structure similar to the one found
+in <CODE>nand_base.c:nand_gpio_waitrdy()</CODE>.  The loop repeatedly
+polls the device's ready status and terminates when the device becomes
+ready or the kernel's clock reaches the timeout value.  The wait-ready
+loop structure has these properties:</P>
+
+<UL>
+<LI> The wait-ready loop always terminates.
+<LI> On termination, either (a) the device is ready, or (b) the clock
+     has ticked through the timeout interval.
+<LI> The driver spends most of the timeout interval sleeping.
+</UL>
+
+<P>The flawed versions of the Alpha driver demonstrate the bugs
+described below.  Each one invalidates one or more of the above
+properties.</P>
+
+<DL>
+
+<DT>Alpha_1: <DD>Wait-ready loop polls the device with the proper
+    timeout but does not sleep.
+
+<DT>Alpha_2: <DD>Wait-ready loop polls the device and returns ready if
+    the device returns ready, but it does not compute a timeout time
+    or compare the current time to that timeout value.  If the device
+    never returns ready it will never time out.
+
+<DT>Alpha_3: <DD>Wait-ready loop incorrectly computes the timeout time
+    as simply the timeout interval and not the current time plus the
+    timeout interval, thus making the timeout time a moment in the
+    distant past.  Wait-ready loop always sleeps for a bit and does at
+    least one poll of the device.  Thus in test so long as the device
+    rapidly returns ready all will seem well.  However, the loop will
+    declare timeout on its first clock comparison and not wait the
+    proper timeout value.
+
+<DT>Alpha_4: <DD>The copy is done by an unnecessarily complicated
+    nested loop.  The inner loop copies eight bytes at a time.  The
+    outer loop runs the inner one the proper number of times if the
+    total number of bytes to copy is a multiple of 8.  However, it has
+    a bug: if the total number of bytes is not a multiple of 8, it
+    fails to copy the last 1-7 bytes.
+
+<DT>Alpha_5: <DD>The copy is done by a similar nested loop that works
+    if the total number of bytes to copy is a multiple of 8.  The
+    outer loop fails to terminate if the count is not a multiple of 8.
+
+<DT>Alpha_6: <DD>The copy loop stores the bytes read into the
+    destination buffer in reverse order.
+
+</DL>
+
+<H2>5.2.  The Bravo driver</H2>
+
+<P>The Bravo_0 driver correctly implements the same jump table
+composition pattern with the framework as the Alpha driver.  However,
+it transfers data to and from the device using a less common loop
+structure pattern: a simple loop that increments a count of the bytes
+transferred and uses the C array index operator to index through the
+driver-side buffer, similar
+to <CODE>amd-delta.c:gpio_nand_read_buf()</CODE>
+and <CODE>gpio_nand_write_buf()</CODE>.</P>
+
+</P>It waits for the device to become ready with a doubly-nested loop
+structure similar to the one found in
+<CODE>hisi504_nand.c:wait_controller_finished()</CODE>.  This curious
+loop structure waits for erase operations differently from other
+operations: it sleeps while polling only for erase operations; it has
+a timeout bound only for non-erase operations.</P>
+
+<P>The Bravo_0 driver's data transfer and wait-ready loop structures
+have the same properties as those in Alpha_0.  The Bravo_1 through 6
+drivers demonstrate the same bugs.</P>
+
+<H2>5.3.  The Foxtrot driver</H2>
+
+<p>The Foxtrot driver adds support for processing sequences of
+instructions to the basic functionality found in the Alpha driver.
+Many real-world drivers provide this functionality in
+an <CODE>exec_op()</CODE> function.  The Foxtrot driver implements a
+typical command sequence processing loop that iterates through an
+operation represented by an array of instructions (ideally) conforming
+to the grammar in <A HREF="framework.html#table7">Table 7</A>.  The loop
+contains a large switch that dispatches control to a handler for each
+kind of instruction.  The <CODE>gpio.c:gpio_nand_exec_op()</CODE>
+function provides an example of this pattern.</P>
+
+<P>Foxtrot_0's command interpreter loop structure has the following
+properties:</P>
+
+<UL>
+<LI> The loop to process all instructions in an operation always
+     terminates.
+<LI> The loop sends all instructions to the device.
+<LI> It sends the instructions in the proper order.
+</UL>
+
+<P>The flawed versions of the Foxtrot driver demonstrate the bugs
+described below.  Each one invalidates one or more of the above
+properties.</P>
+
+<DL>
+
+<DT>Foxtrot_1: <DD>The driver copies the operation into a buffer
+    before processing them.  The driver's buffer is large enough to
+    accommodate reads of a single page, but longer operations get
+    truncated and some instructions don't make it to the device.
+
+<DT>Foxtrot_2: <DD>For no good reason, the index for the instruction
+    loop gets modded to some N, if there are N or fewer instructions
+    in an operation, all will be well.  If there are more than N, it
+    will dispatch the first N instructions to the device forever.
+
+</DL>
+
+<H2>5.4.  The Kilo driver</H2>
+
+<P>The Kilo driver updates the DIB with a description of its device and
+its capabilities.  A well-formed DIB has these properties:</P>
+
+<UL>
+<LI> Its nodes are linked correctly.
+<LI> Each node's reference count is set as follows:
+
+  <UL>
+  <LI> storage chip nodes: reference count is 1.
+  <LI> controller chip nodes: reference count is equal to its number of
+       storage chip nodes.
+  <LI> device nodes: reference count is its controller chip node plus 1.
+  </UL>
+    
+<LI> The linked list of Device nodes contains no more than 64 nodes.
+<LI> Each linked list of Storage Chip nodes contains no more than 8 nodes.
+</UL>
+
+<P> The flawed versions of the Kilo driver demonstrate the bugs described
+below.  Each one invalidates one or more of the above properties.</P>
+
+<DL>
+
+  <DT> kilo_1: <DD> The framework provides the driver with a
+       well-formed initial DIB that already contains some devices.
+       The driver has a bug that de-links a device already in the DIB
+       upon registration.
+
+  <DT> kilo_2: <DD> The driver links a new Device node, but no
+       Controller or Storage nodes.
+
+  <DT> kilo_3: <DD> The driver links a new Device and Controller node,
+       but no Storage nodes.
+
+  <DT> kilo_4: <DD> The driver registers itself properly in all
+       respects except all reference counts are zero.
+
+  <DT> kilo_5: <DD> The driver registers itself properly in all
+       respects except that it incorrectly sets two of the
+       Controller-Storage chip node links to <CODE>NULL</CODE>.
+</DL>
+
+<HR>
+
+<P><A HREF="manual.html">          Table of contents</A></P>
+
+</BODY></HTML>
