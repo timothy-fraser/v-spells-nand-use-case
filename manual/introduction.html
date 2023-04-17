@@ -36,13 +36,14 @@ the diagram in <A HREF="introduction.html#figure1">Figure 1</A>, it
 consists of four components:</P>
 
 <DL>
+  
   <DT>Device emulator: <DD>an emulator for a simple raw NAND storage
       device that presents device drivers with an interface that
       resembles the one that the Linux kernel presents to real device
       drivers.  This interface implements a message-passing
       composition pattern based on Input/Output registers and General
-      Purpose Input/Output pins.  Section 3 describes this interface
-      in detail.
+      Purpose Input/Output pins.  <A HREF="device.html">Section 3</A>
+      describes this interface in detail.
 
   <DT>Framework emulator: <DD>an emulator that presents device drivers
       with a collection of interfaces that resemble the ones the Linux
@@ -50,7 +51,8 @@ consists of four components:</P>
       interface implements a different composition pattern: function
       call through a jump table, instruction streams through a command
       interpreter, and modifications to a shared data structure.
-      Section 4 describes these interfaces in detail.
+      <A HREF="framework.html">Section 4</A> describes these
+      interfaces in detail.
 
   <DT>Device driver: <DD>researchers can use the test rig's makefile
       to build an executable that includes one device driver at a
@@ -60,10 +62,10 @@ consists of four components:</P>
       drivers demonstrates examples of several loop structure patterns
       common to real device drivers; researchers interested in
       automated program analysis and reasoning may find these to be an
-      interesting challenge.  Section 5 describes these loop structure
-      patterns.  It also provides a table that indicates which loop
-      structure and framework interface composition patterns each
-      example driver demonstrates.
+      interesting challenge.  <A HREF="drivers.html">Section 5</A>
+      describes these loop structure patterns.  It also provides a
+      table that indicates which loop structure and framework
+      interface composition patterns each example driver demonstrates.
 
   <DT>Test suite: <DD>the makefile builds an executable that includes
       a suite of functional tests appropriate for its configured
