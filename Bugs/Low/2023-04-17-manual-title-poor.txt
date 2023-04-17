@@ -1,0 +1,14 @@
+
+SUBJECT:
+
+manual/manual.html
+
+OBSERVED:
+
+Title refers to "V-SPELLS Use Case 2" and "Flaw Fix via DSL".
+
+EXPECTED:
+
+Title refers to "V-SPELLS NAND storage use case" or something similar
+that is more descriptive.  The fact that this was Provatek's second
+use case isn't important.

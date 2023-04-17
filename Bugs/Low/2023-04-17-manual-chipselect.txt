@@ -1,0 +1,14 @@
+
+SUBJECT:
+
+manual/device.html.
+
+OBSERVED:
+
+Section 3.5 heading mentions "selecting chips".
+
+EXPECTED:
+
+No mention of selecting chips.  Although there were plans to support
+chip slect via GPIO pins at one point, it didn't get implemented, and
+the manual shouldn't advertise it.
