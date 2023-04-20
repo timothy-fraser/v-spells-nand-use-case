@@ -29,38 +29,130 @@ my above initial observation, his observation was accurate:
 
 EXPECTED:
 
-Like my initial observation of the loop's behavior, my initial
-expectation of its correct behavior was also incorrect:
+Mark observed two notable things.  First, he noted that the length
+variable that the data transfer loops decrement is an unsigned rather
+than signed int.  While this may be awkward for proof, it is the
+expected type and thus not a bug.  The use case Alpha drivers are
+meant to emulate the Linux readsb() macro from
+include/asm-generic/io.h.  This macro uses an unsigned int for its
+length count.
 
-    Loop should return the number of bytes read, not 0.
+Second, he noted that the function does not return 0 on success.  This
+is definitely a bug (due to the novice-unfriendly post-decrement
+operator), but there is some confusion on what the expected behavior
+for success ought to be.  Figuring this out will require some
+analysis.  There may be some bugs in the use case manual's spec as
+well as in the code.  There may also be bugs in the other drivers that
+Mark did not examine.
 
-Determining the actual correct behavior will require some
-reinvestigation of the actual Linux raw NAND flash storage driver
-behavior, as the pertinent details didn't make it from my notes into
-the use case manual's design spec.  A brief look confirms these facts:
+ANALYSIS:
 
-    - The use case Alpha drivers are meant to emulate the Linux
-      readsb() macro from include/asm-generic/io.h.  This macro uses
-      an unsigned int for its length count.  The use of an unsigned
-      rather than signed int may be unusual as Mark pointed out, but
-      it is the correct choice in this case.
+2022-04-19
 
-    - The readsb() macro is a void function - it doesn't return the
-      number of bytes read, nor does it return 0.  It returns nothing.
+The Alpha and Bravo drivers are meant to emulate the (now deprecated)
+jump table interface defined in include/linux/mtd/rawnand.h:struct
+nand_legacy.
 
-    - The NAND_OP_DATA_IN_INSTR case of the gpio_nand_exec_instr
-      command interpreter helper function in Linux's foxtrot-style
-      drivers/mtd/nand/raw/gpio.c driver (indirectly) calls readsb()
-      and then explicitly returns 0.  It never returns a non-zero
-      value to indicate an error.  All the instruction cases return 0
-      in this fashion except for NAND_OP_WAITRDY_INSTR, which will
-      return a nonzero value on timeout.  gpio_nand_exec_op will quit
-      interpreting instructions and return a nonzero value to the NAND
-      framework if a timeout occurs, otherwise it returns 0 to
-      indicate all is well.
+The Foxtrot and Kilo drivers are meant to emulate the newer exec_op()
+command interpreter interface.  My go-to example for this interpreter
+is the implementation in drivers/mtd/nand/raw/gpio.c:
+gpio_nand_exec_instr().
 
-We need some investigation into what the correct behavior ought to be.
-The comments in the driver code do not describe the correct behavior
-and will also need fixing.
+Here's a comparison of all the views on the question of "what should
+the return values of driver functions be?":
 
-The use case manual spec may also need fixing.
+    struct nand_legacy: the set register, read buffer, and
+        write_buffer functions all are void.  Only the wait-ready
+        function returns a signed int.
+
+    gpio.c: The gpio.c driver's gpio_nand_exec_op() function has a
+        loop that iterates through a stream of instructions.  It calls
+        gpio_nand_exec_instr() to process each one.
+        gpio_nand_exec_instr() has a switch statement with a case for
+        each instruction type.  The cases for the command, addr, data
+        in, and data out instruction always return 0.  Only the
+        wait-ready case returns either 0 on ready or -ETIMEDOUT.  The
+        loop in gpio_nand_exec_op() checks the gpio_nand_exec_instr()
+        return value and returns it immediately if it is non-zero.
+        Otherwise it processes all the instructions in the stream and
+        returns 0.
+
+    use case manual on jump table: set register is void.  read and
+        write buffer return number of bytes transferred or -1 on
+        error.  Wait-ready returns 0 on ready or -1 on timeout.  (Note
+        that this is the alpha driver behavior Mark modeled in P in
+        his first experiment working from the manual.)
+
+    use case manual on command interpreter: does not specify return
+        values for any of the operations.  It also doesn't specify
+        what to do if a case experiences an error.
+
+    the alpha0 driver comments: set register is void.  read and write
+        buffer return *0 on success* (contrary to the manual) or -1 on
+        error.  Wait-ready returns 0 on ready or -1 on timeout.  (Note
+        that this is the behavior Mark took as the correct intended
+        behavior and attempted to prove when he worked from the code
+        and added Frama-C annotations.)
+
+    alpha0 driver: set register is void.  read and write have curious
+        behavior, as observed by Mark during his Frama-C work
+        described above.  They both return -1 if requested length is
+        greater than page size.  Their comments indicate they return 0
+        on success, but they actually return whatever unsigned int
+        value results from decrementing 0.  wait returns 0 on ready or
+        -1 on timeout.
+
+    bravo0 driver: set register is void.  read and write both return
+        -1 if requested length is greater than page size, otherwise
+        they return the number of bytes transferred.  wait returns 0
+        on ready or -1 on timeout.
+
+    foxtrot0 and kilo0 drivers: The foxtrot and kilo drivers have an
+        exec_op()-like command interpreter that is a big switch with a
+        case for each kind of instruction.  Each case uses a separate
+        helper function to do the actual work.  The helper functions
+        to set the command and address registers are both void.  The
+        helpers for read and write both return -1 if requested length
+        is greater than page size, otherwise they return the number of
+        bytes transferred.  The wait helper returns 0 on ready or -1
+        on timeout.  The command interpreter will immediately return
+        if a read, write, or wait returns -1, abandoning the remainder
+        of the instruction steam.
+
+As far as Mark's work with the V16 release code and Frama-C goes:
+Although the "return 0 on success" read-buffer behavior specified in
+the alpha0 driver comment doesn't match the manual or the real linux
+behavior, it was clearly the developer's intent and a worthy
+correctness property for demonstrating the ability of Frama-C and
+proof to find bugs.
+
+What to do for V17 and future versions?
+
+(1) The first step might be to fix the manual so that it matches the
+    desired behavior from the real linux code.  Even if the use case
+    drivers continue to conflict with the manual, this quick fix would
+    support anyone who wants to work from the manual rather than the
+    code.  Specific fixes:
+
+      - Make the manual specify that the jump table buffer read/write
+        functions are void.  This entails removing the "return -1 on
+        length greater than a page" requirement.  The device should
+        serve such long requests without complaint by simply looping
+        around in its cache ring buffer.
+
+      - Make the manual specify that the command interpreter presumes
+        that only the wait-ready instruction can fail, and that the
+        only way it can fail is a timeout.  Upon timeout, the
+        interpreter should immedately return -1.  Otherwise it should
+        process the entire instruction stream and return 0.  This
+        change entails updating the manual's statement of desirable
+        correctness properties to permit the immediate-return case,
+        per bug 2023-04-13-manual-ExecOp-wrong.
+
+      - Mark this bug and the above manual-ExecOp-wrong bug "fixed"
+        and create two new bugs: one for the alpha/bravo drivers and
+        one for the foxtrot/kilo drivers that ask to bring the driver
+        code into compliance with the fixed user manual spec.
+      
+(2) Undertake the larger task of bringing all of the driver code into
+    compliance with the updated user manual spec.
