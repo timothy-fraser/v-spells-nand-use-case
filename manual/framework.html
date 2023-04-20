@@ -89,9 +89,28 @@ test suite would make this series of calls through the jump table:</P>
 
 </OL>
 
+</P> Test suites must take care to ask <CODE>read_buffer()</CODE> to
+read only within the bounds of a single emulated NAND storage device
+page; the device emulator will serve <CODE>read_buffer()</CODE>
+requests that cross a page boundary but the data it provides for pages
+beyond the first will not accurately reflect what is in its storage.
+Similarly, they must task care to ask <CODE>write_buffer()</CODE> to
+write only within the bounds of a single page.</P>
+
 <P>Test suites must ask the framework to make a similar series of
 calls through the driver's jump table to properly implement write and
 erase tasks.</P>
+
+<P> Note that, like real Linux raw NAND storage drivers, the test
+rig's emulated drivers assume the test suite will cause the framework
+emulator to invoke their jump table functions in an order that
+properly operates the device emulator.  It is not the responsibility
+of drivers to enforce the ordering of the driver-device protocol
+described in <A HREF="device.html">Section 3</A>.  The drivers will
+happily execute their functions in an improper order; doing so will
+result in inefficient operation at best and at worst will move the
+device emulator into its distinguished bug state.</P>
+
 
 <A NAME="interpreter">
 <H2>4.2.  Command interpreter</H2>
@@ -156,16 +175,33 @@ series of instructions:</P>
 
 </OL>
 
-<P>Note that the above grammar permits operations composed of any
-instructions in any order.  However, the emulated NAND storage device
-expects only certain instructions in certain orders, as described in
-<A HREF="device.html">Section 3</A>.  Operations that violate those
-expectations will drive the device into a bug state.  Like this
-permissive grammar, real-world Linux device
-driver <CODE>exec_op()</CODE> functions will accept operations with
-incorrectly ordered instructions.  They rely on the NAND framework and
-higher-level components to emit operations that will not confuse the
-device.</P>
+<P>As with the jump table functions described
+above, <CODE>IN_WAIT_READY</CODE> is the only instruction that conveys
+a meaningful result (device ready or timeout) from the driver.
+Command interpreters must begin with the first instruction in an
+operation and process instructions one by one in order until either
+an <CODE>IN_WAIT_READY</CODE> instruction indicates the driver has
+timed out waiting for a busy device or they have processed all of the
+instructions in the operation.  On timeout, command interpreters must
+immediately return -1 to the framework without processing any further
+instructions in the operation.  Otherwise, they must return 0 to
+indicate the successful processing of an entire operation.</P>
+
+<P> Test suites must implement tests for command interpreter driver
+read, program, and erase operations just as they did for jump table
+drivers.  They must also mind page boundaries in a similar
+fashion.</P>
+
+<P> Just as drivers implementing the jump table composition pattern
+described above will accept invocations of their functions in an
+incorrect order without complaint, drivers implementing command
+interpreters will accept operations composed of instructions in any
+order.  They rely on higher levels of software to ensure device
+operation that is both efficient and will not drive the device into
+its distinguished bug state.</P>
+
+
+
 
 <A NAME="dib">
 <H2>4.3.  Shared device information base data structure</H2>
@@ -233,12 +269,8 @@ read_buffer(buffer, length)
 <P> This function enables the framework to read data from the emulated
 NAND storage device into a buffer.  The <CODE>buffer</CODE> parameter
 indicates the buffer to receive the data; the <CODE>length</CODE>
-parameter indicates the number of bytes to read.  The test suite
-should take care to ask <CODE>read_buffer()</CODE> to read only within
-the bounds of a single emulated NAND storage device page;
-asking <CODE>read_buffer()</CODE> to cross a page boundary represents
-an error that will result in undefined behavior.  This function
-returns -1 on error, otherwise the number of bytes read.</P>
+parameter indicates the number of bytes to read.  This function has no
+return value.</P>
 
 <PRE WIDTH="80">
 write_buffer(buffer, length)

@@ -1,0 +1,31 @@
+
+SUBJECT:
+
+All foxtrot drivers.
+All kilo drivers.
+
+
+OBSERVED:
+
+The foxtrot and kilo drivers have an exec_op()-like command
+interpreter that is a big switch with a case for each kind of
+instruction.  Each case uses a separate helper function to do the
+actual work.
+
+The helpers for read and write both return -1 if requested length is
+greater than page size, otherwise they return the number of bytes
+transferred.
+
+
+EXPECTED:
+
+(Note that this bug asks to bring a correct V16 implementation into
+compliance with the updated V17 manual spec.)
+
+The read and write helpers must process rather than refuse to process
+requests that cross page boundaries and not attempt to report errors.
+The only instruction that may report an error (timeout) and terminate
+the loop that processes the instructions in an operation is
+IN_WAIT_READY.
+
+

@@ -130,8 +130,25 @@ properties:</P>
 <UL>
 <LI> The loop to process all instructions in an operation always
      terminates.
-<LI> The loop sends all instructions to the device.
-<LI> It sends the instructions in the proper order.
+
+<LI> The loop sends a prefix of the instructions in the operation to
+     the device.  It sends them in the same order they appear in the
+     operation.  The prefix always begins with the first instruction
+     in the operation.  Its length depends on the ready/timeout
+     indications of any <CODE>IN_WAIT_READY</CODE> instructions it
+     contains.
+
+<LI> Every prefix has one of the two following properties:
+  
+  <UL>
+
+  <LI> If all <CODE>IN_WAIT_READY</CODE> instructions indicated ready,
+       the prefix contains all of the instructions in the operation.
+
+  <LI> Otherwise, the prefix ends with the
+       first <CODE>IN_WAIT_READY</CODE> instruction to indicate timeout.
+  </UL>
+  
 </UL>
 
 <P>The flawed versions of the Foxtrot driver demonstrate the bugs

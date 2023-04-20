@@ -1,0 +1,27 @@
+
+SUBJECT:
+
+All alpha drivers.
+All bravo drivers.
+
+
+OBSERVED:
+
+    alpha0 driver: read buffer and write buffer functions return -1 if
+        requested length is greater than page size.  They return
+        whatever unsigned int value results from decrementing 0
+        otherwise.
+
+    bravo0 driver: read and write both return -1 if requested length
+        is greater than page size, otherwise they return the number of
+        bytes transferred.
+
+EXPECTED:
+
+(Note that this is partly a fix to V16 bugs and partly to bring a
+correct V16 implementation into compliance with the updated V17 manual
+spec.)
+
+In all drivers, the buffer read and write functions must be void.
+They must process rather than refuse to process requests that cross
+page boundaries.
