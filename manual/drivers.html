@@ -6,7 +6,7 @@
 <H1>5.  Device drivers</H1>
 
 <P>The corpus of example drivers contains a series of drivers ordered
-alphabetically by name: Alpha, Bravo, and so on.  The series of names
+alphabetically by name: Alpha, Foxtrot, and so on.  The series of names
 skips some letters to permit the potential insertion of additional
 driver examples in the future.  The "_0" variant of each driver
 correctly implements a particular combination of composition and loop
@@ -38,10 +38,11 @@ have these properties:</P>
     
 <P>The Alpha_0 driver waits for the device to become ready with a
 simple loop structure similar to the one found
-in <CODE>nand_base.c:nand_gpio_waitrdy()</CODE>.  The loop repeatedly
-polls the device's ready status and terminates when the device becomes
-ready or the kernel's clock reaches the timeout value.  The wait-ready
-loop structure has these properties:</P>
+in <CODE>nand_base.c:nand_gpio_waitrdy()</CODE>, shown
+in <A HREF="drivers.html#table8">Table 8</A>.  The loop repeatedly polls the
+device's ready status and terminates when the device becomes ready or
+the kernel's clock reaches the timeout value.  The wait-ready loop
+structure has these properties:</P>
 
 <UL>
 <LI> The wait-ready loop always terminates.
@@ -87,31 +88,19 @@ properties.</P>
 <DT>Alpha_6: <DD>The copy loop stores the bytes read into the
     destination buffer in reverse order.
 
+<DT>Alpha_7: <DD>The wait-ready loop has different behavior depending
+    on which operation the driver is waiting to complete, as shown
+    in <A HREF="drivers.html#table9">Table 9</A>.  Its behavior is correct for
+    erase operations, but it fails to sleep on other operations.
+
+<DT>Alpha_8: <DD>The behavior of the unusual nested wait-ready loop
+    shown in <A HREF="drivers.html#table9">Table 9</A> also depends on the
+    operation.  Its behavior is correct for read and program
+    operations, but it never times out on erase operations.
+
 </DL>
 
-<H2>5.2.  The Bravo driver</H2>
-
-<P>The Bravo_0 driver correctly implements the same jump table
-composition pattern with the framework as the Alpha driver.  However,
-it transfers data to and from the device using a less common loop
-structure pattern: a simple loop that increments a count of the bytes
-transferred and uses the C array index operator to index through the
-driver-side buffer, similar
-to <CODE>amd-delta.c:gpio_nand_read_buf()</CODE>
-and <CODE>gpio_nand_write_buf()</CODE>.</P>
-
-</P>It waits for the device to become ready with a doubly-nested loop
-structure similar to the one found in
-<CODE>hisi504_nand.c:wait_controller_finished()</CODE>.  This curious
-loop structure waits for erase operations differently from other
-operations: it sleeps while polling only for erase operations; it has
-a timeout bound only for non-erase operations.</P>
-
-<P>The Bravo_0 driver's data transfer and wait-ready loop structures
-have the same properties as those in Alpha_0.  The Bravo_1 through 6
-drivers demonstrate the same bugs.</P>
-
-<H2>5.3.  The Foxtrot driver</H2>
+<H2>5.2.  The Foxtrot driver</H2>
 
 <p>The Foxtrot driver adds support for processing sequences of
 instructions to the basic functionality found in the Alpha driver.
@@ -169,7 +158,7 @@ properties.</P>
 
 </DL>
 
-<H2>5.4.  The Kilo driver</H2>
+<H2>5.3.  The Kilo driver</H2>
 
 <P>The Kilo driver updates the DIB with a description of its device and
 its capabilities.  A well-formed DIB has these properties:</P>
@@ -212,6 +201,120 @@ below.  Each one invalidates one or more of the above properties.</P>
        respects except that it incorrectly sets two of the
        Controller-Storage chip node links to <CODE>NULL</CODE>.
 </DL>
+
+
+<HR>
+<CENTER>
+<A NAME="table8">
+<P><EM>Table 8 - Alpha_0 driver wait-ready loop structures.</EM></P>
+</CENTER>    
+
+<PRE WIDTH="80">
+  timeout_time = clock() + wait_interval
+  
+  DO
+      IF gpio_get(PN_STATUS) == DEVICE_READY
+          THEN RETURN 0
+          ELSE sleep for POLLING_INTERVAL
+      ENDIF
+  WHILE clock() < timeout_time
+
+  IF gpio_get(PN_STATUS) == DEVICE_READY
+      THEN RETURN  0
+      ELSE RETURN -1
+  ENDIF
+</PRE>
+
+<P>Notes:</P>
+
+<DL>
+
+  <DT> <CODE>clock()</CODE> <DD> The Linux kernel maintains a global
+       volatile <CODE>jiffies</CODE> variable whose value increases
+       monotonically with CPU clock ticks.  Because the test rig runs
+       in user rather than kernel mode, its drivers must call
+       the <CODE>clock()</CODE> function to emulate reading
+       the <CODE>jiffies</CODE> variable.
+
+  <DT> <CODE>wait_interval</CODE> <DD> Callers use
+       the <CODE>wait_interval</CODE> parameter to specify the maximum
+       number of microseconds the driver should spend in its
+       wait-ready loop polling the device before giving up and
+       indicating a timeout error condition.
+
+  <DT> <CODE>POLLING_INTERVAL</CODE> <DD>
+       The <CODE>POLLING_INTERVAL</CODE> constant is a number of
+       microseconds smaller than any
+       expected <CODE>wait_interval</CODE>.  The driver will sleep
+       for <CODE>POLLING_INTERVAL</CODE> microseconds between each
+       poll to avoid putting unnecessary load on the CPU.
+
+</DL>
+
+
+<HR>
+<CENTER>
+<A NAME="table9">
+  <P><EM>Table 9 - Incorrect wait-ready loop structures for Alpha_7
+  and Alpha_8 drivers.
+  </EM></P>
+</CENTER>    
+
+<P>These incorrect wait-ready loop structures were inspired by the
+unusual wait-ready
+function <CODE>hisi504_nand.c:wait_controller_finished()</CODE>.  Both
+loop structures consider the operation for which the driver is
+waiting.  The correct <CODE>wait_ready()</CODE> function does not
+consider the operation and thus its interface provides no parameter to
+identify it.  Drivers may instead rely on a global variable to
+identify the operation to these buggy wait-ready loop structures.</P>
+
+<P>Alpha 7 driver wait-ready loop structure:</P>
+
+<PRE WIDTH="80">
+  timeout_time = clock() + wait_interval
+  
+  DO
+      IF gpio_get(PN_STATUS) == DEVICE_READY
+          THEN RETURN 0
+      ELSE
+          IF we are waiting for an erase operation
+              THEN sleep for POLLING_INTERVAL
+          ENDIF
+      ENDIF
+  WHILE clock() < timeout_time
+
+  IF gpio_get(PN_STATUS) == DEVICE_READY
+      THEN RETURN  0
+      ELSE RETURN -1
+  ENDIF
+</PRE>
+
+
+<P>Alpha driver 8 wait-ready loop structure:</P>
+
+<PRE WIDTH="80">
+  timeout_time = clock() + wait_interval
+  
+  WHILE clock() < timeout_time DO
+      status = gpio_get(PN_STATUS)
+      IF we're waiting for an erase operation
+      THEN
+          WHILE status != DEVICE_READY
+              sleep for POLLING_INTERVAL
+              status = gpio_get(PN_STATUS)
+          ENDWHILE
+          RETURN 0
+      ELSE
+          IF status == DEVICE_READY
+              RETURN 0
+          ELSE sleep for POLLING_INTERVAL
+          ENDIF
+      ENDIF
+  ENDWHILE
+
+  RETURN -1
+</PRE>
 
 <HR>
 

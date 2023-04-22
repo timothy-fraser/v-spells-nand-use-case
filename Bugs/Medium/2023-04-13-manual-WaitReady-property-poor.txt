@@ -12,6 +12,9 @@ second property:
     On termination, either (a) the device is ready, or (b) the clock
     has ticked through the timeout interval.
 
+2023-04-22: Furthermore, the manual does not specify actual values for
+all of the key timeout constants.
+
 EXPECTED:
 
 The design’s definition does not explain the causal relationship
@@ -20,4 +23,11 @@ the loop. A better definition might specify that, if the device
 becomes ready during the wait interval, the wait loop must terminate
 and indicate the driver should proceed. Otherwise, it should terminate
 and indicate a timeout error condition.
+
+2023-04-22: The manual should specify the values of all the key
+timeout constants in milliseconds.  For drivers, these constants
+include the wait intervals for read, program, and erase operations.
+They also include the polling interval to sleep between polls.  For
+the device emulator, they include the read page, write page, and erase
+block durations.
 

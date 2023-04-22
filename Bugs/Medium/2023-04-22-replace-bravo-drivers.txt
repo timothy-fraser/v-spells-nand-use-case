@@ -1,0 +1,30 @@
+
+SUBJECT:
+
+All bravo drivers
+Makefile
+
+OBSERVED:
+
+The bravo_0 driver can never really be "correct" according to our
+desired properties, and the bravo series doesn't demonstrate any new
+composition patterns or intentional bugs.  Their only contribution is
+their odd wait-ready loop structure, which I now realize is inherently
+broken according to our properties.
+
+Alpha_7 and Alpha_8 drivers newly-specified in the V17 manual are absent.
+
+EXPECTED:
+
+No bravo drivers.
+
+Alpha_7 and Alpha_8 drivers present and correct per V17 spec.
+
+ANALYSIS:
+
+This bug is essentially a call to remove the deprecated Bravo driver
+series and to replace the interesting parts of the old Bravo series
+with the two new Alpha added to the V17 spec.
+
+
+

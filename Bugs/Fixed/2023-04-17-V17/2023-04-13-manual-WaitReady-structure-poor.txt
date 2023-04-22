@@ -1,0 +1,115 @@
+
+SUBJECT:
+
+Use case manual.
+
+OBSERVED:
+
+When describing the structure of driver wait-ready loops, the use case
+manual lazily refers the Linux nand_gpio_waitrdy() function commonly
+used by real drivers rather than specifically enumerating structure
+requirements. This laziness appears to have prompted the use case
+software developers to implement their wait-ready loops in the same
+fashion as those in real Linux NAND drivers: they will not poll the
+device if they find the timeout interval has already elapsed before
+they begin looping. In their initial P modeling experiment Vanderbilt
+University, working from the same design document, modeled their loops
+in a different way: they will always poll at least once.
+
+EXPECTED:
+
+The use case manual ought to explicitly describe the structure of
+wait-ready loops so that the requirement is clear.
+
+ANALYSIS:
+
+2023-04-20
+
+In attempting to formalize the structure of the alpha_0 and bravo_0
+wait-ready loops, I have made several new observations:
+
+  (1) The current alpha_0 wait-ready implementation's while-do loop
+      will not poll the device if the timeout interval has somehow
+      already elapsed.  The structure described by the manual is a
+      do-while loop that always polls the device at least once.  IIRC,
+      Vanderbilt U's Mark Wutka modeled the do-while version of this
+      behavior in his initial P modeling experiment.  I now see that
+      his model behavior is arguably more correct than the alpha
+      driver corpus implementations.
+
+  (2) The wait-ready jump table function and the wait-ready command
+      interpreter instruction take a parameter telling them how long
+      to wait, but they do not take a parameter that specifies which
+      operation the driver is waiting to complete.  Indeed, it would
+      seem odd to include such an operation parameter when the timeout
+      interval alone would do.  However, the bravo driver's wait-ready
+      function needs to know when it is waiting for an erase operation
+      because it has different behavior in that case.  The current
+      bravo driver implementations have an ugly global variable to
+      pass this information into the wait-ready function.
+
+  (4) The loop structure we want the bravo drivers to emulate is this:
+
+      timeout_time = now + wait_interval
+  
+      WHILE now < timeout_time DO
+          status = gpio_get(PN_STATUS)
+          IF we're waiting for an erase operation
+          THEN
+              WHILE status != DEVICE_READY
+>                 sleep for polling interval
+>                 status = gpio_get(PN_STATUS)
+              ENDWHILE
+>             RETURN 0
+          ELSE
+              IF status == DEVICE_READY
+                  RETURN 0
+              ENDIF
+          ENDIF
+      ENDWHILE
+
+      RETURN -1
+
+      The bravo_0 wait-ready function implementation's erase operation
+      case does not match the (odd and likely broken) structure we are
+      trying to emulate. It has the sleep and status poll reversed and
+      it lacks the return (lines marked with ">" above).
+
+      This is also bug 2022-08-20-bravo-wait-order.txt.
+
+  (5) Our desired bravo structure is broken in two ways.  First, the
+      erase case sleeps but can never time out.  Second, the other
+      cases can time out but never sleep.  None of the bravo driver
+      wait-ready loop structures can have the properties we desire.
+
+What to do?
+
+The bravo_0 driver can never really be "correct" according to our
+desired properties, and the bravo series doesn't demonstrate any new
+composition patterns or intentional bugs.  Their only contribution is
+their odd wait-ready loop structure, which I now realize is inherently
+broken according to our properties.  A potential plan:
+
+1.  In the manual, specify an alpha_7 driver that, like the bravo
+    drivers, considers the operation it is waiting for and has a
+    separate case for erase.  Implement this combination of features:
+
+        On erase:  sleep and timeout (correct).
+	On others: timeout but no sleep (bug).
+
+2.  Specify a bravo-like alpha_8 driver that has the opposite
+    arrangement:
+
+        On erase:  sleep but never time out (bug).
+	On others: sleep and time out (correct).
+
+3.  Remove mention of the bravo series from the manual.
+
+4.  Close this bug and 2022-08-20-bravo-wait-order.txt.
+
+5.  Open two new bugs: one to remove the bravo series from the code
+    and makefile, and another to add the new alpha_7 and alpha_8.
+
+6.  Eventually modify the code/makefile to handle those two new bugs.
+
+  
