@@ -31,3 +31,39 @@ They also include the polling interval to sleep between polls.  For
 the device emulator, they include the read page, write page, and erase
 block durations.
 
+ANALYSIS:
+
+2023-04-22:
+
+The V16 code has these timing constants:
+
+  device_emu.c:
+  
+    /* Durations (microseconds) */
+    #define READ_PAGE_DURATION   100
+    #define WRITE_PAGE_DURATION  600
+    #define ERASE_BLOCK_DURATION 2000
+    #define RESET_DURATION       500
+
+  driver.h:
+  
+    /* The framework should use the following timeouts as arguments to the
+     * wait_ready() jump table function and the NAND_OP_WAITRDY_INSTR
+     * operation instruction.  Choose the proper timeout for the operation
+     * you're waiting on.  Note that these values do not match the
+     * duration constants the device emulator uses; these are deliberately
+     * 10% longer.
+     */
+    #define TIMEOUT_READ_PAGE_US    110
+    #define TIMEOUT_WRITE_PAGE_US   660
+    #define TIMEOUT_ERASE_BLOCK_US 2200
+    #define TIMEOUT_RESET_US        550
+
+  Each individual driver.c file:
+
+    #define NAND_POLL_INTERVAL_US 10  /* polling interval in microseconds */
+
+What to do?  Plan:
+
+These constants are reasonable; let's simply adopt them in the spec
+and thus avoid the need to open a bug to make code changes.

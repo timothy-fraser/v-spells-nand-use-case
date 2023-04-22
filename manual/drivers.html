@@ -39,18 +39,28 @@ have these properties:</P>
 <P>The Alpha_0 driver waits for the device to become ready with a
 simple loop structure similar to the one found
 in <CODE>nand_base.c:nand_gpio_waitrdy()</CODE>, shown
-in <A HREF="drivers.html#table8">Table 8</A>.  The loop repeatedly polls the
+in <A HREF="drivers.html#table10">Table 10</A>.  The loop repeatedly polls the
 device's ready status and terminates when the device becomes ready or
 the kernel's clock reaches the timeout value.  The wait-ready loop
 structure has these properties:</P>
 
 <UL>
-<LI> The wait-ready loop always terminates.
-<LI> On termination, either (a) the device is ready, or (b) the clock
-     has ticked through the timeout interval.
-<LI> The driver spends most of the timeout interval sleeping.
-</UL>
 
+<LI> The wait-ready loop always terminates within the
+     specified <CODE>wait_interval</CODE>.
+
+<LI> The wait-ready loop terminates and returns a 0 success indication
+     if and only if it received a <CODE>DEVICE_READY</CODE> indication
+     from <CODE>gpio_get(PN_STATUS)</CODE>.  Otherwise, it returns a
+     -1 timeout indication.
+
+<LI> Upon receiving a <CODE>DEVICE_BUSY</CODE> indication
+     from <CODE>gpio_get(PN_STATUS)</CODE>, the wait-ready loop either
+     (a) causes the driver to sleep for <CODE>POLLING_INTERVAL</CODE>
+     or (b) terminates and returns a -1 timeout indication.
+  
+</UL>
+  
 <P>The flawed versions of the Alpha driver demonstrate the bugs
 described below.  Each one invalidates one or more of the above
 properties.</P>
@@ -90,11 +100,12 @@ properties.</P>
 
 <DT>Alpha_7: <DD>The wait-ready loop has different behavior depending
     on which operation the driver is waiting to complete, as shown
-    in <A HREF="drivers.html#table9">Table 9</A>.  Its behavior is correct for
-    erase operations, but it fails to sleep on other operations.
+    in <A HREF="drivers.html#table11">Table 11</A>.  Its behavior is
+    correct for erase operations, but it fails to sleep on other
+    operations.
 
 <DT>Alpha_8: <DD>The behavior of the unusual nested wait-ready loop
-    shown in <A HREF="drivers.html#table9">Table 9</A> also depends on the
+    shown in <A HREF="drivers.html#table11">Table 11</A> also depends on the
     operation.  Its behavior is correct for read and program
     operations, but it never times out on erase operations.
 
@@ -108,7 +119,7 @@ Many real-world drivers provide this functionality in
 an <CODE>exec_op()</CODE> function.  The Foxtrot driver implements a
 typical command sequence processing loop that iterates through an
 operation represented by an array of instructions (ideally) conforming
-to the grammar in <A HREF="framework.html#table7">Table 7</A>.  The loop
+to the grammar in <A HREF="framework.html#table9">Table 9</A>.  The loop
 contains a large switch that dispatches control to a handler for each
 kind of instruction.  The <CODE>gpio.c:gpio_nand_exec_op()</CODE>
 function provides an example of this pattern.</P>
@@ -205,8 +216,8 @@ below.  Each one invalidates one or more of the above properties.</P>
 
 <HR>
 <CENTER>
-<A NAME="table8">
-<P><EM>Table 8 - Alpha_0 driver wait-ready loop structures.</EM></P>
+<A NAME="table10">
+<P><EM>Table 10 - Alpha_0 driver wait-ready loop structures.</EM></P>
 </CENTER>    
 
 <PRE WIDTH="80">
@@ -243,19 +254,18 @@ below.  Each one invalidates one or more of the above properties.</P>
        indicating a timeout error condition.
 
   <DT> <CODE>POLLING_INTERVAL</CODE> <DD>
-       The <CODE>POLLING_INTERVAL</CODE> constant is a number of
-       microseconds smaller than any
-       expected <CODE>wait_interval</CODE>.  The driver will sleep
-       for <CODE>POLLING_INTERVAL</CODE> microseconds between each
-       poll to avoid putting unnecessary load on the CPU.
+       The <CODE>POLLING_INTERVAL</CODE> constant is 10 microseconds.
+       The driver will sleep for <CODE>POLLING_INTERVAL</CODE>
+       microseconds between each poll to avoid putting unnecessary
+       load on the CPU.
 
 </DL>
 
 
 <HR>
 <CENTER>
-<A NAME="table9">
-  <P><EM>Table 9 - Incorrect wait-ready loop structures for Alpha_7
+<A NAME="table11">
+  <P><EM>Table 11 - Incorrect wait-ready loop structures for Alpha_7
   and Alpha_8 drivers.
   </EM></P>
 </CENTER>    

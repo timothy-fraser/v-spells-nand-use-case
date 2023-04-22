@@ -98,11 +98,13 @@ byte in storage.  The cursor's least significant byte also indicates
 the byte in the cache.
 
 <DT>Deadline: <DD>In real-world NAND flash devices, operations that
-reading data from storage into cache and programming storage from
-cache take time to complete.  The emulator provides this timing
-feature; the feature uses a deadline state variable remember the
-system clock time at which the most recent read or program operation
-will complete.
+read data from storage into cache, program storage from cache, erase
+storage, and reset the device take time to complete.  The emulator
+provides this timing feature; the feature uses a deadline state
+variable remember the system clock time at which the most recent read,
+program, erase, or reset operation will complete.  The constants
+in <A HREF="device.html#table1">Table 1</A> define how long each
+operation takes to complete.
 
 <DT>Machine state: <DD>The device emulator is a state machine that,
 once initialized at test rig startup, changes its state only in
@@ -126,7 +128,7 @@ state with one of the following actions:</P>
 device decides what processing to do based on its current machine
 state, does that processing, and moves to a new machine state.</P>
 
-<P><A HREF="device.html#table1">Table 1</A> describes the initial
+<P><A HREF="device.html#table2">Table 2</A> describes the initial
 <CODE>ms_initial_state</CODE> machine state and how the device
 responds to driver prompts while in that machine state.  It also
 describes an <CODE>ms_bug</CODE> state to aid in driver debugging.
@@ -188,7 +190,7 @@ number of cache bytes equal to the number of times it reads the data
 IO register.</P>
 
 <P>The device passes through the machine states described
-in <A HREF="device.html#table2">Table 2</A> to support this series of
+in <A HREF="device.html#table3">Table 3</A> to support this series of
 actions.  Once the driver has read the last byte it wishes to read, it
 has several options:</P>
 
@@ -267,7 +269,7 @@ page, the driver makes the following actions:</P>
 </OL>
 
 <P>The device passes through the machine states described
-in <A HREF="device.html#table3">Table 3</A> to support this series of
+in <A HREF="device.html#table4">Table 4</A> to support this series of
 actions.  Once the driver has patiently waited for the device to
 return to ready status, it has several options:</P>
 
@@ -320,7 +322,7 @@ following actions:</A>
 </OL>
   
 <P>The device passes through the machine states described
-in <A HREF="device.html#table4">Table 4</A> to support this series of
+in <A HREF="device.html#table5">Table 5</A> to support this series of
 actions.  Once the driver has patiently waited for the device to
 return to ready status, it has several options:</P>
 
@@ -367,7 +369,7 @@ which it cannot make useful progress.  In these cases, drivers may use
 <CODE>set_gpio(pn_reset, 1)</CODE> to cause the device to reset itself
 to its initial state.</P>
 
-<A HREF="device.html#table5">Table 5</A> describes how the device
+<A HREF="device.html#table6">Table 6</A> describes how the device
 reacts to <CODE>gpio_get()</CODE> and <CODE>gpio_set()</CODE> calls
 while it is in any machine state.
 
@@ -401,7 +403,22 @@ NAND flash storage devices.</P>
 <HR>
 <CENTER>
   <A NAME="table1">
-    <P><EM>Table 1 - Device initial and idle machine state.  Common
+    <P><EM>Table 1 - Constants defining the duration of device emulator
+    operations in microseconds.</EM></P>
+</CENTER>
+
+<PRE WIDTH="80">
+    /* Durations (microseconds) */
+    #define READ_PAGE_DURATION   100
+    #define WRITE_PAGE_DURATION  600
+    #define ERASE_BLOCK_DURATION 2000
+    #define RESET_DURATION       500
+</PRE>
+
+<HR>
+<CENTER>
+  <A NAME="table2">
+    <P><EM>Table 2 - Device initial and idle machine state.  Common
     actions.</EM></P>
 </CENTER>
 
@@ -440,8 +457,8 @@ ms_erase_awaiting_execute:</P>
 
 <HR>
 <CENTER>
-  <A NAME="table2">
-    <P><EM>Table 2 - Device machine states for reading.</EM></P>
+  <A NAME="table3">
+    <P><EM>Table 3 - Device machine states for reading.</EM></P>
   </A>
 </CENTER>
 <PRE WIDTH="80">
@@ -503,8 +520,8 @@ State ms_read_providing_data:
 
 <HR>
 <CENTER>
-  <A NAME="table3">
-    <P><EM>Table 3 - Device machine states for programming</EM></P>
+  <A NAME="table4">
+    <P><EM>Table 4 - Device machine states for programming</EM></P>
   </A>
 </CENTER>
 
@@ -559,8 +576,8 @@ State ms_program_accepting_data:
 
 <HR>
 <CENTER>
-  <A NAME="table4">
-    <P><EM>Table 4 - Device machine states for erasing</EM></P>
+  <A NAME="table5">
+    <P><EM>Table 5 - Device machine states for erasing</EM></P>
   </A>
 </CENTER>
 <PRE WIDTH="80">
@@ -591,8 +608,8 @@ State ms_erase_awaiting_execute:
 
 <HR>
 <CENTER>
-  <A NAME="table5">
-    <P><EM>Table 5 - GPIO actions common to all machine states.</EM></P>
+  <A NAME="table6">
+    <P><EM>Table 6 - GPIO actions common to all machine states.</EM></P>
   </A>
 </CENTER>
 

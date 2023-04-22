@@ -46,7 +46,7 @@ four interfaces:</P>
 <H2>4.1.  Function call through jump table</H2>
 </A>
 
-<A HREF="framework.html#table6">Table 6</A> describes the jump table
+<A HREF="framework.html#table7">Table 7</A> describes the jump table
 functions.  This function call through jump table composition pattern
 represents a legacy interface supported by the real-world Linux
 kernel's NAND framework; its jump table can be found
@@ -99,7 +99,9 @@ write only within the bounds of a single page.</P>
 
 <P>Test suites must ask the framework to make a similar series of
 calls through the driver's jump table to properly implement write and
-erase tasks.</P>
+erase tasks.  <A HREF="framework.html#table8">Table 8</A> indicates the
+proper wait intervals the framework must provide
+the <CODE>wait_ready()</CODE> function for each kind of operation.</P>
 
 <P> Note that, like real Linux raw NAND storage drivers, the test
 rig's emulated drivers assume the test suite will cause the framework
@@ -120,7 +122,7 @@ device emulator into its distinguished bug state.</P>
 function that implements an interpreter for operations (that is,
 programs) consisting of a series of instructions drawn from a simple
 command language and their
-arguments.  <A HREF="framework.html#table7">Table 7</A> contains the
+arguments.  <A HREF="framework.html#table9">Table 9</A> contains the
 grammar for that command language.  Once registered, the framework can
 operate the device by calling this parser function and providing it
 with an array of commands and arguments in that language.  This
@@ -189,8 +191,9 @@ indicate the successful processing of an entire operation.</P>
 
 <P> Test suites must implement tests for command interpreter driver
 read, program, and erase operations just as they did for jump table
-drivers.  They must also mind page boundaries in a similar
-fashion.</P>
+drivers.  They must also provide <CODE>IN_WAIT_READY</CODE>
+instructions with the proper wait interval values and mind page
+boundaries in a similar fashion.</P>
 
 <P> Just as drivers implementing the jump table composition pattern
 described above will accept invocations of their functions in an
@@ -247,8 +250,8 @@ each node has a reference count field.</P>
 
 <HR>
 <CENTER>
-<A NAME="table6"
-<P><EM>Table 6 - Device driver to framework jump table interface.</EM><P>
+<A NAME="table7"
+<P><EM>Table 7 - Device driver to framework jump table interface.</EM><P>
 </A>
 </CENTER>
 
@@ -292,8 +295,31 @@ within the timeout interval.</P>
 
 <HR>
 <CENTER>
-<A NAME="table7">
-<P><EM>Table 7 - Device driver to framework command grammar interface.</EM></P>
+<A NAME="table8"
+<P><EM>Table 8 - Constants defining the maximum time drivers must
+spend polling a busy device before giving up and indicating a timeout
+error condition for each operation.</EM><P>
+</A>
+</CENTER>
+
+<PRE WIDTH="80">
+/* The framework should use the following timeouts as arguments to the
+ * wait_ready() jump table function and the NAND_OP_WAITRDY_INSTR
+ * operation instruction.  Choose the proper timeout for the operation
+ * you're waiting on.  Note that these values do not match the
+ * duration constants the device emulator uses; these are deliberately
+ * 10% longer.
+ */
+#define TIMEOUT_READ_PAGE_US    110
+#define TIMEOUT_WRITE_PAGE_US   660
+#define TIMEOUT_ERASE_BLOCK_US 2200
+#define TIMEOUT_RESET_US        550
+</PRE>
+
+<HR>
+<CENTER>
+<A NAME="table9">
+<P><EM>Table 9 - Device driver to framework command grammar interface.</EM></P>
 </CENTER>
 
 <PRE WIDTH="80">
