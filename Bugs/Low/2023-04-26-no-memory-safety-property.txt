@@ -1,0 +1,19 @@
+
+SUBJECT:
+
+Manual.
+
+OBSERVED:
+
+The manual's list of desirable properties for driver data transfer
+loops does not include a demand for memory safety: that the loop reads
+and writes remain within the bounds of their buffer.
+
+Vanderbilt/Mark Wutka's April 2023 experiment with Frama-C sought to
+prove such a property.
+
+EXPECTED:
+
+Manual ought to include a memory safety property for data transfer
+loops.
+

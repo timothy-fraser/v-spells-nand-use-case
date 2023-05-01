@@ -1,0 +1,63 @@
+
+SUBJECT:
+
+device_emu.c
+
+OBSERVED:
+
+In April 2023, Purdue/Qingkai Shi used their StateLifter tool to lift
+(extract) the device emulator's watchpoint-driven state machine to a
+state machine diagram in the .dot format used by the open source
+GraphViz graph visualization tools.
+
+The guard expressions on the graph edges were all in terms of the
+contents of the device emulator's command register.  The address and
+data registers didn't appear in any of these guard expressions.
+StateLifter's graph faithfully represented the logic in the device
+emulator C source: the watchpoint handler's switch and if logic are
+about the command register and not the address or data registers.
+
+
+EXPECTED:
+
+The device emulator's watchpoint handler logic might be less kludgy if
+it were able to consider the other registers.  This might lead
+StateLifter to produce graphs with edge guards that match intuition
+more closely.  For example, instead of reads looking like this in its
+graphs:
+
+  C_READ_SETUP
+  C_READ_SETUP C_READ_SETUP C_READ_SETUP 
+  C_READ_EXECUTE
+  C_DUMMY C_DUMMY C_DUMMY C_DUMMY C_DUMMY
+
+They might look like this:
+
+  C_READ_SETUP
+  block page byte
+  C_READ_EXECUTE
+  data data data data data
+
+
+ANALYSIS:
+
+The single watchpoint tells the device emulator's watchpoint handler
+that the driver either read from or wrote to one of the three
+registers but does not indicate whether it was a read or write and
+which register the driver touched.  The device emulator figures out
+these specifics through a kind of "process of elimination" that
+concerns only the command register.  Arguably this approach is a
+kludge, especially the need for the C_DUMMY dummy command.
+
+That said, the current approach serves the use case's original design
+goal of emulating the peculiar IO Register semantics of a storage
+device from the point of view of a driver.  The original design
+presumed the drivers would be the focus of attention; Purdue's
+interest in the device emulator was unexpected.
+
+This bug is essentially a call for investigation.  The current
+situation may be the best that can be done.  However, a better
+approach might be possible if we used the three remaining CPU
+watchpoints.
+
+

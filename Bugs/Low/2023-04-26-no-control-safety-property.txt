@@ -1,0 +1,19 @@
+
+SUBJECT:
+
+Manual.
+
+OBSERVED:
+
+The manual does not list any safety properties concerning the Alpha
+driver jump table interface.  In particular, it does not demand any
+kind of control-flow safety property: that each slot in the jump table
+points to the proper function.
+
+EXPECTED:
+
+Manual ought to include a control-flow safety property for Alpha-style
+drivers with jump tables.
+
+
+
