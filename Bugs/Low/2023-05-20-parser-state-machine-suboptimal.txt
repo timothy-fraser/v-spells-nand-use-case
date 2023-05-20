@@ -1,0 +1,56 @@
+
+SUBJECT
+
+Device emulator pseudocode spec in manual v37 shipped with use case
+distro V16.
+
+OBSERVED
+
+Issue 1: Except for the transitions leading from the initial state
+(see bug 2023-05-20-rset-delay-differs), all of the transitions in the
+device emulator parser state machine have a "if system clock <
+deadline" check to see if the device is ready or busy.
+
+Issue 2: Arguably, this spec encodes the device emulator state
+machine's state in a combination of the state and deadline variables
+rather than just state.
+
+EXPECTED
+
+Issue 1: A more elegant state machine specification might have noted
+that the device becomes busy only after certain transitions, and thus
+only the following transitions need to make readiness checks.
+
+Issue 2: It might be more proper to track the state of the machine in
+only one variable.  This might be accomplished by adding a few new MS_
+states to represent a busy device (perhaps MS_READ_BUSY,
+MS_PROGRAM_BUSY, MS_ERASE_BUSY, and maybe even MS_RESET_BUSY) and then
+making the end of a busy period an input akin to the C_ commands that
+moves the machine out of the _BUSY states.
+
+ANALYSIS
+
+Having thought about it while writing up this bug, I have begun to
+think the case for spec changes is fairly weak.
+
+Issue 1: There may be merit to removing the ready/busy checks from
+transitions where the device can never be busy.  However, knowing
+which transitions those are requires a clear understanding of how the
+machine as a whole works, and I may not have that understanding in my
+head if I add a new feature that introduces new opportunities for
+busyness in the future.  The present design may be less optimal in
+terms of instruction count but more future-proof.
+
+Issue 2: I no longer think there is sufficient merit to encoding
+busyness in the state vairable rather than in the separate deadline
+variable.  Although encoding the entire state in a single state
+variable would be more proper in terms of state machine aesthetics, it
+would require the device emulator to invoke the present watchpoint
+interrupt handler on an additional "busy deadline reached" event.
+This event would likely require an implementation based on timer
+interrupts.  The use of a timer would require the handler to become a
+critical section to avoid double-entry and the control flow of the
+program would become more complicated.  IIRC, I was deliberately
+trying to avoid the use of interrupts in the spec (other than those
+demanded by ptrace()), so on this point the spec is probably OK
+as-written.

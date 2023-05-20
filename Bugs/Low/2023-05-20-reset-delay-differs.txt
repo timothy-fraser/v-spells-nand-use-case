@@ -1,0 +1,38 @@
+
+SUBJECT:
+
+Device emulator pseudocode spec in manual v37 shipped with use case
+distro V16.
+
+OBSERVED:
+
+Pseudocode spec for device emulator gpio_set(reset) handler requires
+device emulator to (1) clear device state, (2) move device to
+MS_INITIAL_STATE, (3) delay (sleep) for RESET_DURATION.  Since the
+test rig spends RESET_DURATION sleeping rather than awaiting a
+deadline as read, program, and erase operations do, the pseudocode
+does not include the otherwise ubiquitous "system clock < deadline"
+checks on the transitions out of MS_INITIAL_STATE.
+
+EXPECTED:
+
+Expected reset step (3) to set a deadline like the other operations do
+rather than cause the test rig to sleep().  Expected the transitions
+from MS_INITIAL_STATE to make the same "system clock < deadline"
+checks all of the transitions from other states do.
+
+ANALYSIS:
+
+Note that the device emulator code and its unit tests faithfully
+follow the spec as written.
+
+I can't remember why I asked the device emulator to sleep rather than
+to set a deadline when I wrote the spec.  The spec as-written may
+actually be the best way to do things; this might not actually be a
+bug.  But the difference between reset and all the other operations
+seems strange enough to merit some analysis, at least.
+
+I discovered this (non?) bug while working on the spec for the test
+rig to support the 2023 V-SPELLS TA1 Purdue - TA2 VU - TA3 Yale
+end-to-end experiment.
+
