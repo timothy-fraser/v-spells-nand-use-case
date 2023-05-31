@@ -23,3 +23,22 @@ EXPECTED:
     when a page or block operaiton fails, just as they do with
     timeouts.
     
+ANALYSIS
+
+2023-05-31:
+
+The expected behavior in the spec has changed since I originally
+logged this bug.  Per Fixed/2023-04-20-AlphaBravoOutOfSpec and
+Fixed/2023-04-20-FoxtrotKiloOutOfSpec, the only operation that is
+allowed to return a -1 error value is timeout.
+
+Read and program operations are void, so there's really no meaningful
+way to accumulate the number of bytes read from or programmed to the
+device.
+
+With these changed expectations in mind, here's the new expected
+behavior for the framework read, write, and erase functions:
+
+ - -1 on timeout,
+ -  0 otherwise (presumed success).
+

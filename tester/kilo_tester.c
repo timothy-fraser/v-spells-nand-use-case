@@ -198,13 +198,13 @@ int tester_main(volatile unsigned long *ioregister)
 	data_print(data, DATA_ROWS, DATA_COLUMNS);
 
 	puts("Writing data...");
-	if (DATA_SIZE != write_nand(data, STORAGE_ADDR, DATA_SIZE)) {
+	if (write_nand(data, STORAGE_ADDR, DATA_SIZE)) {
 		printf("Failed to write %u bytes to storage address %u.\n",
 		       DATA_SIZE, STORAGE_ADDR);
 		exit(-1);
 	}
 	puts("Reading data...");
-	if (DATA_SIZE != read_nand(dest, STORAGE_ADDR, DATA_SIZE)) {
+	if (read_nand(dest, STORAGE_ADDR, DATA_SIZE)) {
 		printf("Failed to read %u bytes from storage address %u.\n",
 		       DATA_SIZE, STORAGE_ADDR);
 		exit(-1);
@@ -218,13 +218,13 @@ int tester_main(volatile unsigned long *ioregister)
 	       "and confirm it is zeroed:\n\n");
 
 	puts("Erasing blocks...");
-	if (DATA_SIZE != erase_nand(STORAGE_ADDR, DATA_SIZE)) {
+	if (erase_nand(STORAGE_ADDR, DATA_SIZE)) {
 		printf("Failed to erase %u bytes from storage address %u.\n",
 		       DATA_SIZE, STORAGE_ADDR);
 		exit(-1);
 	}
 	puts("Reading erased blocks...");
-	if (DATA_SIZE != read_nand(dest, STORAGE_ADDR, DATA_SIZE)) {
+	if (read_nand(dest, STORAGE_ADDR, DATA_SIZE)) {
 		printf("Failed to read %u bytes from storage address %u.\n",
 		       DATA_SIZE, STORAGE_ADDR);
 		exit(-1);

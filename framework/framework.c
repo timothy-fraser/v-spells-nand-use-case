@@ -100,8 +100,7 @@ struct nand_device *init_framework(volatile unsigned long *ioregister,
  *         offset - device address to receive data
  *         size   - number of bytes to write, can be multiple pages
  * out:    nothing
- * return: -1 on error (specifically, device timeout) else number
- *         of bytes written to the device.
+ * return: -1 on error (specifically, device timeout) else 0.
  *          
  * Writes size bytes from buffer to NAND storage device.  Writes them
  * to storage starting at the storage address in offset.
@@ -155,7 +154,7 @@ int jt_write(unsigned char *buffer, unsigned int offset, unsigned int size) {
 		cursor += size_to_write;
 		bytes_left -= size_to_write;
 	}
-	return size;
+	return 0;
 }
 
 
@@ -165,8 +164,7 @@ int jt_write(unsigned char *buffer, unsigned int offset, unsigned int size) {
  *         offset - device address to receive data
  *         size   - number of bytes to write, can be multiple pages
  * out:    nothing
- * return: -1 on error (specifically, device timeout) else number
- *         of bytes written to the device.
+ * return: -1 on error (specifically, device timeout) else 0.
  *          
  * Writes size bytes from buffer to NAND storage device.  Writes them
  * to storage starting at the storage address in offset.
@@ -240,9 +238,9 @@ int exec_write(const unsigned char* buffer, unsigned int offset,
 	} while(bytes_left > 0);
 
 	if (driver.operation.exec_op(&operation))
-		return -1;  /* timeout or exceeded page */
+		return -1;  /* timeout */
 
-	return size;
+	return 0;
 }
 
 int write_nand(unsigned char *buffer, unsigned int offset, unsigned int size)
@@ -258,6 +256,22 @@ int write_nand(unsigned char *buffer, unsigned int offset, unsigned int size)
 	return -1;
 }
 
+
+/* jt_read()
+ *
+ * in:     offset - read data from this device address
+ *         size   - number of bytes to read, can be multiple pages
+ * out:    buffer - array to receive bytes read from device.
+ * return: -1 on error (specifically, device timeout) else 0.
+ *          
+ * Reads size bytes from NAND storage device to buffer starting at
+ * the storage address in offset.
+ *
+ * This version of read works with drivers that provide the framework
+ * with a jump table of functions rather than a command interpreter.
+ *
+ */
+
 int jt_read(unsigned char *buffer, unsigned int offset, unsigned int size)
 {
 	unsigned int bytes_per_page = NUM_BYTES;
@@ -269,7 +283,8 @@ int jt_read(unsigned char *buffer, unsigned int offset, unsigned int size)
 
 	unsigned char byte_addr = offset % bytes_per_page;
 	unsigned char page_addr = offset / pages_per_block;
-	unsigned char block_addr = offset / (pages_per_block * blocks_per_chip);
+	unsigned char block_addr = offset / (pages_per_block *
+		blocks_per_chip);
 
 	unsigned int size_to_read;
 
@@ -300,8 +315,24 @@ int jt_read(unsigned char *buffer, unsigned int offset, unsigned int size)
 		cursor += size_to_read;
 		bytes_left -= size_to_read;
 	}
-	return size;
+	return 0;
 }
+
+
+/* exec_read()
+ *
+ * in:     offset - read data beginning at this device address
+ *         size   - number of bytes to read, can be multiple pages
+ * out:    buffer - receives data read from storage device
+ * return: -1 on error (specifically, device timeout) else 0.
+ *          
+ * Reads size bytes from NAND storage device to buffer starting at the
+ * storage address in offset.
+ *
+ * This version of read works with drivers that provide the framework
+ * with a command interpreter rather than a jump table.
+ *
+ */
 
 int exec_read(unsigned char* buffer, unsigned int offset, unsigned int size)
 {
@@ -314,7 +345,8 @@ int exec_read(unsigned char* buffer, unsigned int offset, unsigned int size)
 
 	unsigned char byte_addr = offset % bytes_per_page;
 	unsigned char page_addr = offset / pages_per_block;
-	unsigned char block_addr = offset / (pages_per_block * blocks_per_chip);
+	unsigned char block_addr = offset / (pages_per_block *
+		blocks_per_chip);
 
 	unsigned int size_to_read;
 
@@ -365,9 +397,9 @@ int exec_read(unsigned char* buffer, unsigned int offset, unsigned int size)
 	} while(bytes_left > 0);
 
 	if (driver.operation.exec_op(&operation))
-		return -1;  /* timeout or exceeded page */
+		return -1;  /* timeout */
 
-	return size;
+	return 0;
 }
 
 int read_nand(unsigned char *buffer, unsigned int offset, unsigned int size)
@@ -405,7 +437,7 @@ int jt_erase(unsigned int offset, unsigned int size)
 			TIMEOUT_ERASE_BLOCK_US))
 			return -1;  /* timeout */
 	}
-	return size;
+	return 0;
 }
 
 int exec_erase(unsigned int offset, unsigned int size)
@@ -449,7 +481,7 @@ int exec_erase(unsigned int offset, unsigned int size)
 	if (driver.operation.exec_op(&operation))
 		return -1;  /* timeout */
 
-	return size;
+	return 0;
 }
 
 
