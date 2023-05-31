@@ -111,8 +111,8 @@ struct nand_device
 struct nand_jump_table
 {
 	void (*set_register)(unsigned char offset, unsigned char value);
-	int (*read_buffer)(unsigned char *buffer, unsigned int length);
-	int (*write_buffer)(unsigned char *buffer, unsigned int length);
+	void (*read_buffer)(unsigned char *buffer, unsigned int length);
+	void (*write_buffer)(unsigned char *buffer, unsigned int length);
 	int (*wait_ready)(unsigned int interval_us);
 };
 

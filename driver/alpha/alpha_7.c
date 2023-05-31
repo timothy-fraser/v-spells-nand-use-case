@@ -23,6 +23,7 @@ void nand_set_register(unsigned char offset, unsigned char value)
 }
 
 // Waits for device status to be ready for an action
+// Intended bug:  does not sleep for operations other than erase.
 int nand_wait(unsigned int interval_us)
 {
 	/* Some explanation on this timeout computation:
@@ -59,35 +60,23 @@ int nand_wait(unsigned int interval_us)
 }
 
 // Reads the data in to buffer in the nand device at offset with length of size
-// Returns number of bytes read
-int nand_read(unsigned char *buffer, unsigned int length)
+void nand_read(unsigned char *buffer, unsigned int length)
 {
-	unsigned int page_size = NUM_BYTES;
-	if (length > page_size) {
-		return -1;
-	}
 
 	for (unsigned int i = 0; i < length; i++) {
 		buffer[i] = *((unsigned char*)driver_ioregister + IOREG_DATA);
 	}
 
-	return length;
 }
 
 // Writes the data in buffer to the nand device at offset with length of size
-// Returns number of bytes wrote
-int nand_program(unsigned char *buffer, unsigned int length)
+void nand_program(unsigned char *buffer, unsigned int length)
 {
-	unsigned int page_size = NUM_BYTES;
-	if (length > page_size) {
-		return -1;
-	}
 
 	for (unsigned int i = 0; i < length; i++) {
 		*((unsigned char*)driver_ioregister + IOREG_DATA) = buffer[i];
 	}
 
-	return length;
 }
 
 struct nand_driver get_driver()

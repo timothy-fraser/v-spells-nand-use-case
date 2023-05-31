@@ -45,15 +45,10 @@ int nand_wait(unsigned int interval_us)
 }
 
 // Reads the data in to buffer in the nand device at offset with length of size
-// Returns 0 on success
 // Intended BUG: Read will not read data past a multiple of 8
 // i.e. a read of 35 bytes will read only 32, missing the last 3
-int nand_read(unsigned char *buffer, unsigned int length)
+void nand_read(unsigned char *buffer, unsigned int length)
 {
-	unsigned int page_size = NUM_BYTES;
-	if (length > page_size) {
-		return -1;
-	}
 
 	for (int i = 0; i < length / 8; i++)	{
 		for (int j = 0; j < 8; j++) {
@@ -63,24 +58,17 @@ int nand_read(unsigned char *buffer, unsigned int length)
 		}
 	}
 
-	return 0;
 }
 
 // Writes the data in buffer to the nand device at offset with length of size
-// Returns 0 on success
-int nand_program(unsigned char *buffer, unsigned int length)
+void nand_program(unsigned char *buffer, unsigned int length)
 {
-	unsigned int page_size = NUM_BYTES;
-	if (length > page_size) {
-		return -1;
-	}
 
 	while (length--) {
 		*((unsigned char*)driver_ioregister + IOREG_DATA) = 
 			*buffer++;
 	}
 
-	return length;
 }
 
 struct nand_driver get_driver()
