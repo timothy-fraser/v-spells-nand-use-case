@@ -10,7 +10,7 @@ LDFLAGS = -L $(LIBDIR)
 
 TARGETS= $(BINDIR)/test_alpha_0 $(BINDIR)/test_alpha_1 $(BINDIR)/test_alpha_2 \
 	 $(BINDIR)/test_alpha_3 $(BINDIR)/test_alpha_4 $(BINDIR)/test_alpha_5 \
-	 $(BINDIR)/test_alpha_6
+	 $(BINDIR)/test_alpha_6 $(BINDIR)/test_alpha_7 $(BINDIR)/test_alpha_8
 
 all : $(TARGETS)
 
