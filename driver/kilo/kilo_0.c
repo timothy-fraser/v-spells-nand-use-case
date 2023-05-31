@@ -80,37 +80,23 @@ int nand_wait(unsigned int interval_us)
 }
 
 // Reads the data in to buffer in the nand device at offset with length of size
-// Returns number of bytes read
-int nand_read(unsigned char* buffer, unsigned int length)
+void nand_read(unsigned char* buffer, unsigned int length)
 {
-	unsigned int page_size = kilo_device.controller->first_storage->
-		nbytes_per_page;
-	if (length > page_size) {
-		return -1;
-	}
 
 	for (unsigned int i = 0; i < length; i++) {
 		buffer[i] = *((unsigned char*)driver_ioregister + IOREG_DATA);
 	}
 
-	return length;
 }
 
 // Writes the data in buffer to the nand device at offset with length of size
-// Returns number of bytes wrote
-int nand_program(const unsigned char* buffer, unsigned int length)
+void nand_program(const unsigned char* buffer, unsigned int length)
 {
-	unsigned int page_size = kilo_device.controller->first_storage->
-		nbytes_per_page;
-	if (length > page_size) {
-		return -1;
-	}
 
 	for (unsigned int i = 0; i < length; i++) {
 		*((unsigned char*)driver_ioregister + IOREG_DATA) = buffer[i];
 	}
 
-	return length;
 }
 
 // Performs functionality simular to exec_op in linux kernal
@@ -135,16 +121,12 @@ int exec_op(struct nand_operation *commands)
 			}
 			break;
 		case NAND_OP_DATA_IN_INSTR:
-			if (command.ctx.data.len !=
-				nand_program(command.ctx.data.buf.in, 
-				command.ctx.data.len))
-				return -1;  /* exceeded page */
+			nand_program(command.ctx.data.buf.in, 
+				command.ctx.data.len);
 			break;
 		case NAND_OP_DATA_OUT_INSTR:
-			if (command.ctx.data.len !=
-				nand_read(command.ctx.data.buf.out,
-				command.ctx.data.len))
-				return -1;  /* exceeded page */
+			nand_read(command.ctx.data.buf.out,
+				command.ctx.data.len);
 			break;
 		case NAND_OP_WAITRDY_INSTR:
 			if (nand_wait(command.ctx.waitrdy.timeout_ms))
