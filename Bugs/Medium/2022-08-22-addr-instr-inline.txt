@@ -11,8 +11,27 @@ OBSERVED:
 The argument for NAND_OP_ADDR_INSTR instructions is a pointer to an
 array of three address bytes.
 
+2023-06-01 update:
+
+The nand_operation structure has a pointer to an array of
+nand_op_instrs rather than having the array itself.  This might be the
+sensible thing to do since the number of instructions varies with the
+parameters supplied by the test calle, but the exec_read(),
+exec_write(), and exec_erase() functions always use a constant length
+of 4096.
+
+
 EXPECTED:
 
-The argument for NAND_OP_ADDR_INSTR instructions should be an arry of
+The argument for NAND_OP_ADDR_INSTR instructions should be an array of
 three address bytes as part of the address instruction structure, not
 a pointer to a separate array.
+
+2023-06-01 update:
+
+The instruction array should either be allocated dynamically based on
+the number of instructions needed in a particular situation, or it
+should be some fixed maximum length with a constant #defined and noted
+in the documentation.  The error behavior if a caller exceeds this
+limit should also be documented in this case.
+

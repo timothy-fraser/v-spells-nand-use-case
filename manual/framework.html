@@ -99,7 +99,42 @@ write only within the bounds of a single page.</P>
 
 <P>Test suites must ask the framework to make a similar series of
 calls through the driver's jump table to properly implement write and
-erase tasks.  <A HREF="framework.html#table8">Table 8</A> indicates the
+erase tasks.  The jump table provides a
+distinct <CODE>write_buffer()</CODE> function that enables the
+framework to ask the driver to write data to the device.  However,
+like real Linux raw NAND storage drivers, the test rig's emulated
+drivers do not provide a distinct jump table function to support the
+erasure of storage blocks.  To erase a contiguous series of two blocks,
+the framework must instead use the <CODE>set_register()</CODE> and
+<CODE>wait_ready()</CODE> functions as follows:
+
+  <OL>
+
+    <LI> One call to <CODE>set_register()</CODE> to set the device's
+         command register to <CODE>c_erase_setup</CODE>.
+
+    <LI> One call to <CODE>set_register()</CODE> to set the device's
+         address register to the number of the first block to erase.
+
+    <LI> One call to <CODE>set_register()</CODE> to set the device's
+         command register to <CODE>c_erase_execute</CODE>, prompting
+         the device to erase the first block.
+
+    <LI> One call to <CODE>wait_ready()</CODE> to wait for the erase
+         operation to complete and then poll until the device becomes
+         ready.
+
+    <LI> One call to <CODE>set_register()</CODE> to set the device's
+         command register to <CODE>c_erase_execute</CODE>, prompting
+         the device to erase the second block.
+
+    <LI> One call to <CODE>wait_ready()</CODE> to wait for the erase
+         operation to complete and then poll until the device becomes
+         ready.
+
+    </OL>
+
+<P><A HREF="framework.html#table8">Table 8</A> indicates the
 proper wait intervals the framework must provide
 the <CODE>wait_ready()</CODE> function for each kind of operation.</P>
 
@@ -112,6 +147,7 @@ described in <A HREF="device.html">Section 3</A>.  The drivers will
 happily execute their functions in an improper order; doing so will
 result in inefficient operation at best and at worst will move the
 device emulator into its distinguished bug state.</P>
+
 
 
 <A NAME="interpreter">
@@ -174,6 +210,37 @@ series of instructions:</P>
      to read <CODE>length</CODE> bytes from the device's data register
      into the test suite buffer starting
      at <CODE>bufferaddress</CODE>.
+
+</OL>
+
+
+And to erase two contiguous blocks, the test suite would submit an
+operation consisting of this series of instructions:</P>
+
+<OL>
+
+<LI> <CODE>IN_CMD c_erase_setup</CODE> to write
+     the <CODE>c_erase_setup</CODE> command to the device's command
+     register.
+
+<LI> <CODE>IN_ADDR 1, [ block ]</CODE> to write the number of the
+     first block to the device's address register.
+
+<LI> <CODE>IN_CMD c_erase_execute</CODE> to write
+     the <CODE>c_erase_execute</CODE> command to the device's command
+     register, prompting it to erase the first block.
+
+<LI> <CODE>IN_WAIT_READY 2200</CODE> to cause the driver to sleep for
+     the 2200 microseconds it takes for the device to erase the first block
+     and then poll until the device is ready.
+
+<LI> <CODE>IN_CMD c_erase_execute</CODE> to write
+     the <CODE>c_erase_execute</CODE> command to the device's command
+     register, prompting it to erase the second block.
+
+<LI> <CODE>IN_WAIT_READY 2200</CODE> to cause the driver to sleep for
+     the 2200 microseconds it takes for the device to erase the second block
+     and then poll until the device is ready.
 
 </OL>
 
@@ -358,7 +425,8 @@ OPCODE	->	c_read_setup    | c_read_execute
 	|	c_program_setup | c_program_execute
 	|	c_erase_setup.  | c_erase_execute
 
-NUM	->	; unsigned integer value, always 3.
+NUM	->	3  ; read and program need block, page, byte addresses.
+	|	1  ; erase needs only block address.
 ADDRESSBYTES	->	; array of block, page, byte address values
 LENGTH	->	; unsigned integer value <= device page size.
 BUFFERADDRESS	->	; address of buffer to provide/receive bytes.

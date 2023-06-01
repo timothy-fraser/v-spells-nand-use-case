@@ -727,9 +727,13 @@ static void handle_watchpoint_ioregisters(pid_t child_pid,
 			case C_ERASE_EXECUTE:
 				set_deadline(ERASE_BLOCK_DURATION);
 
-				memset(&data_store[cursor],
-				       0,
-				       NUM_PAGES*NUM_BYTES);
+				/* Erase ignores page and byte offset parts
+				 * of the cursor and erases a whole block.
+				 */
+				memset(&data_store[(cursor &
+					CURSOR_BLOCK_MASK)],
+					0,
+					NUM_PAGES*NUM_BYTES);
 
 				ptrace(PTRACE_POKEDATA,
 				       child_pid,
