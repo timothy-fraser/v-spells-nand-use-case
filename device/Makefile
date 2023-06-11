@@ -6,19 +6,35 @@ FRAMEWORKDIR = ../framework
 CFLAGS = -g -Wall -I$(FRAMEWORKDIR)
 LDFLAGS = -L $(LIBDIR)
 
+OBJS = de_device.o de_gpio.o de_deadline.o de_cursor.o de_ioregs.o
+
 all : $(LIBDIR)/libdevice.a $(BINDIR)/test_device
 
-device_emu.o : device_emu.c device_emu.h $(FRAMEWORKDIR)/framework.h
-	$(CC) $(CFLAGS) -c device_emu.c
+de_gpio.o : de_gpio.c de_gpio.h de_deadline.h de_device.h device_emu.h
+	$(CC) $(CFLAGS) -c de_gpio.c
 
-$(LIBDIR)/libdevice.a : device_emu.o
-	$(AR) cr $(LIBDIR)/libdevice.a device_emu.o
+de_deadline.o : de_deadline.c de_deadline.h
+	$(CC) $(CFLAGS) -c de_deadline.c
 
-$(BINDIR)/test_device : device_test.c $(LIBDIR)/libdevice.a \
+de_cursor.o : de_cursor.c de_cursor.h device_emu.h
+	$(CC) $(CFLAGS) -c de_cursor.c
+
+de_ioregs.o : de_ioregs.c de_ioregs.h
+	$(CC) $(CFLAGS) -c de_ioregs.c
+
+de_device.o : de_device.c device_emu.h \
+		de_gpio.h \
+		$(FRAMEWORKDIR)/framework.h
+	$(CC) $(CFLAGS) -c de_device.c
+
+$(LIBDIR)/libdevice.a : $(OBJS)
+	$(AR) cr $(LIBDIR)/libdevice.a $(OBJS)
+
+$(BINDIR)/test_device : test_device.c $(LIBDIR)/libdevice.a \
 		device_emu.h $(FRAMEWORKDIR)/framework.h
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(BINDIR)/test_device device_test.c \
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(BINDIR)/test_device test_device.c \
 		-ldevice
 
 
 clean :
-	rm -f $(LIBDIR)/libdevice.a $(BINDIR)/test_device device_emu.o
+	rm -f $(LIBDIR)/libdevice.a $(BINDIR)/test_device $(OBJS)

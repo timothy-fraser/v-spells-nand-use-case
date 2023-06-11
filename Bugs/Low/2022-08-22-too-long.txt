@@ -23,3 +23,10 @@ purpose in the same file.
 Long routines broken into a series of short routines by common purpose.
 
 Long lines wrapped.
+
+ANALYSIS:
+
+2023-06-11 update:
+
+Refactored device_emu.c into separate modules and wrapped overly-long
+lines properly.  framework.c problems still remain.
