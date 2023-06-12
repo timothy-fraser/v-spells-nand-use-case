@@ -26,14 +26,14 @@
  * to tweak these predicates.
  */
 
-extern int tester_main();
-
-/* Return true iff function f1 <= address a < function 2. */
-#define RIP_IN_FUNCTION(a, f1, f2) \
-        (((void *)a >= (void *)f1) && ((void *)a < (void *)f2))
+/* Return true iff function start f <= address a < (f + fxn length l) */
+#define RIP_IN_FUNCTION(a, f, l)	\
+        (((void *)a >= (void *)f) && ((void *)a < ((void *)f + l)))
 /* Return true if address a is in named function. */
-#define RIP_IN_GPIO_SET(a) RIP_IN_FUNCTION(a, &gpio_set, &gpio_get)
-#define RIP_IN_GPIO_GET(a) RIP_IN_FUNCTION(a, &gpio_get, &tester_main)
+#define GPIO_SET_LENGTH 0x0E  /* length of gpio_set() program text */
+#define GPIO_GET_LENGTH 0x43  /* length of gpio_get() program text */
+#define RIP_IN_GPIO_SET(a) RIP_IN_FUNCTION(a, &gpio_set, GPIO_SET_LENGTH)
+#define RIP_IN_GPIO_GET(a) RIP_IN_FUNCTION(a, &gpio_get, GPIO_GET_LENGTH)
 
 enum nand_op_instr_type {
 	NAND_OP_CMD_INSTR,
