@@ -8,7 +8,7 @@ LDFLAGS = -L $(LIBDIR)
 
 OBJS = de_device.o de_gpio.o de_deadline.o de_cursor.o de_ioregs.o
 
-all : $(LIBDIR)/libdevice.a $(BINDIR)/test_device
+all : $(LIBDIR)/libdevice.a $(BINDIR)/test_ioregs $(BINDIR)/test_device
 
 de_gpio.o : de_gpio.c de_gpio.h de_deadline.h de_device.h device_emu.h
 	$(CC) $(CFLAGS) -c de_gpio.c
