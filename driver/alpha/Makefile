@@ -17,7 +17,7 @@ all : $(TARGETS)
 $(BINDIR)/test_% : %.c $(DRIVERDIR)/driver.h \
 		$(DEVICEDIR)/device_emu.h $(FRAMEWORKDIR)/framework.h
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< \
-		 -lmain -ldevice -lframework -ltester
+		-lmain -ltester -lframework -ldevice
 
 clean :
 	rm -f $(TARGETS)

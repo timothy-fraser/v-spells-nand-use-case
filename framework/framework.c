@@ -10,69 +10,6 @@
 #include "driver.h"
 #include "device_emu.h"
 
-/* This is an x86/amd64-specific assembly breakpoint instruction that
- * causes the process that executes it to trap to its debugger.  It
- * uses GCC-specific asm() syntax.  Programs typically do not include
- * this breakpoint instruction in their source; tracers (that is,
- * debuggers) typically insert breakpoints into tracees by modifying
- * their program text, writing this breakpoint instruction to the
- * location where they want the tracee to trap and remembering the
- * original instruction the new breakpoint instruction overwrote so
- * they can restore it and let the tracee continue after they've
- * handled the breakpoint.  Restoring the original instruction clears
- * the breakpoint so the tracee won't trap a second time.  We never
- * want to clear our breakpoint; we always want the tracee to trap, so
- * rather than have the tracer modify the tracee's program text we'll
- * simply make the breakpoint instruction part of the tracee's
- * original program text.
- */
-
-#define BREAKPOINT asm("int $3")
-
-/* gpio_set()
- *
- * in:     pin   - the pin number to set.
- *         value - the value to set, either 0 or non-0.
- * out:    none
- * return: none
- *
- * Traps to the parent tracer, expecting the parent tracer to emulate
- * the following functionality:
- *   If value is 0, clears the GPIO pin indicated by pin.
- *   Otherwise, sets the GPIO pin indicagted by pin.
- */
-
-void gpio_set(unsigned int pin, unsigned int value)
-{
-	BREAKPOINT;
-}
-
-/* gpio_get()
- *
- * in:     pin   - the pin number to get.
- * out:    none
- * return: the value of the pin'th pin, either 0 or 1.
- *
- * Traps to the parent tracer, expecting the parent tracer to emulate
- * the following functionality:
- *   Returns 0 if the pin'th pin is clear, otherwise returns 1.
- */
-
-unsigned int gpio_get(unsigned int pin)
-{
-	/* It is important that this local variable be an unsigned long.
-	 * The tracer will modify the value of this variable using
-	 * ptrace(PTRACE_POKEDATA).  The ptrace() function modifies data in
-	 * unsigned-long-sized chunks.  If this variable was smaller than an
-	 * unsigned long, the tracer's unsigned-long-sized write would
-	 * overwrite part of whatever variable was above this one on the
-	 * stack.
-	 */
-	unsigned long retval = 0x00; /* tracee may modify this value */
-	BREAKPOINT;
-	return retval;
-
-} /* gpio_get() */
 
 static struct nand_driver driver;
 
@@ -416,15 +353,46 @@ int read_nand(unsigned char *buffer, unsigned int offset, unsigned int size)
 	return -1;
 }
 
+
+/* jt_erase()
+ *
+ * in:     offset - byte offset to the first block to erase (not the
+ *                  block number).
+ *         size   - number of contiguous blocks to erase in terms of
+ *                  bytes (not block count).
+ * out:    nothing
+ * return: -1 on device timeout, otherwise 0 (presumed success).
+ *
+ * This function uses driver jump table functions to erase a
+ * contiguous series of blocks on the device.
+ *
+ * Note that, like the real Linux framework, it expects callers to
+ * identify the first block to erase in terms of its number of bytes
+ * from the start of device storage rather than its block number.
+ * Similarly, it expects callers to indicate how many blocks to erase
+ * in terms of the byte length of the series rather than the number of
+ * blocks in the series.
+ *
+ * Polite callers will take care to specify offsets that nicely hit
+ * the start of a block and sizes that are a multiple of the block
+ * size.  However, this function will accomodate impolite callers by
+ * expanding the region to erase to cover whatever the caller
+ * specifies plus a little more as needed to erase complete blocks.
+ *
+ */
+
 int jt_erase(unsigned int offset, unsigned int size)
 {
-	unsigned int pages_per_block = NUM_PAGES;
-	unsigned int blocks_per_chip = NUM_BLOCKS;
 
-	unsigned char start_block_addr = offset / 
-		(pages_per_block * blocks_per_chip);
-	unsigned char end_block_addr = (offset + size) / 
-		(pages_per_block * blocks_per_chip);
+	/* Calculate the start and end block number of the contiguous
+	 * region to erase.  Round down for the start and round up for
+	 * the end to ensure we ask the driver to erase complete
+	 * blocks.
+	 */
+	unsigned char start_block_addr = offset /
+		(NUM_PAGES * NUM_BYTES);
+	unsigned char end_block_addr = ((offset + size) / 
+		(NUM_PAGES * NUM_BYTES)) + 0.5;
 
 	driver.operation.jump_table.set_register(IOREG_COMMAND, 
 		C_ERASE_SETUP);
@@ -438,17 +406,48 @@ int jt_erase(unsigned int offset, unsigned int size)
 			return -1;  /* timeout */
 	}
 	return 0;
-}
+	
+} /* jt_erase() */
+
+
+/* exec_erase()
+ *
+ * in:     offset - byte offset to the first block to erase (not the
+ *                  block number).
+ *         size   - number of contiguous blocks to erase in terms of
+ *                  bytes (not block count).
+ * out:    nothing
+ * return: -1 on device timeout, otherwise 0 (presumed success).
+ *
+ * This function uses the operation interpreter to erase a
+ * contiguous series of blocks on the device.
+ *
+ * Note that, like the real Linux framework, it expects callers to
+ * identify the first block to erase in terms of its number of bytes
+ * from the start of device storage rather than its block number.
+ * Similarly, it expects callers to indicate how many blocks to erase
+ * in terms of the byte length of the series rather than the number of
+ * blocks in the series.
+ *
+ * Polite callers will take care to specify offsets that nicely hit
+ * the start of a block and sizes that are a multiple of the block
+ * size.  However, this function will accomodate impolite callers by
+ * expanding the region to erase to cover whatever the caller
+ * specifies plus a little more as needed to erase complete blocks.
+ *
+ */
 
 int exec_erase(unsigned int offset, unsigned int size)
 {
-	unsigned int pages_per_block = NUM_PAGES;
-	unsigned int blocks_per_chip = NUM_BLOCKS;
-
-	unsigned char start_block_addr = offset / 
-		(pages_per_block * blocks_per_chip);
-	unsigned char end_block_addr = (offset + size) / 
-		(pages_per_block * blocks_per_chip);
+	/* Calculate the start and end block number of the contiguous
+	 * region to erase.  Round down for the start and round up for
+	 * the end to ensure we ask the driver to erase complete
+	 * blocks.
+	 */
+	unsigned char start_block_addr = offset /
+		(NUM_PAGES * NUM_BYTES);
+	unsigned char end_block_addr = ((offset + size) / 
+		(NUM_PAGES * NUM_BYTES)) + 0.5;
 
 	struct nand_operation operation;
 	struct nand_op_instr instructions[4096];
