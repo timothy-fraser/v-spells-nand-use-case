@@ -41,5 +41,5 @@ $(BINDIR)/test_ioregs : test_ioregs.c test_patterns.h test_patterns.s \
 		test_patterns.s de_ioregs.o
 
 clean :
-	rm -f $(LIBDIR)/libdevice.a $(BINDIR)/test_device $(BINDIR)/test_gpio \
-		$(OBJS)
+	rm -f $(LIBDIR)/libdevice.a $(BINDIR)/test_device \
+		$(BINDIR)/test_ioregs $(OBJS)
