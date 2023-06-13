@@ -99,7 +99,7 @@ struct nand_driver get_driver()
 struct nand_device *init_nand_driver(volatile unsigned long *ioregister,
 	struct nand_device *old_dib)
 {
-	printf("BRAVO 0 DRIVER\n");
+	printf("ALPHA 7 DRIVER\n");
 	driver_ioregister = ioregister;
 	return old_dib;  /* This driver does not use DIB. */
 }
