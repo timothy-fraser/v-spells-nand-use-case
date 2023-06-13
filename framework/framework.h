@@ -130,17 +130,17 @@ struct nand_driver
 	} operation;
 };
 
-void gpio_set(unsigned int pin, unsigned int value);
-unsigned int gpio_get(unsigned int pin);
+void gpio_set(unsigned int, unsigned int);
+unsigned int gpio_get(unsigned int);
 
 // USER/TESTER INTERFACE
 
-struct nand_device *init_framework(volatile unsigned long *ioregister,
-	struct nand_device *old_dib);
-int write_nand(unsigned char *buffer, unsigned int offset, unsigned int size);
-int read_nand(unsigned char *buffer, unsigned int offset, unsigned int size);
-int erase_nand(unsigned int offset, unsigned int size);
+struct nand_device *init_framework(volatile unsigned long *,
+	struct nand_device *);
+int write_nand(unsigned char *, unsigned int, unsigned int);
+int read_nand(unsigned char *, unsigned int, unsigned int);
+int erase_nand(unsigned int, unsigned int);
 
-int verify_dib(struct nand_device *nand_device);
+int verify_dib(struct nand_device *);
 
 #endif

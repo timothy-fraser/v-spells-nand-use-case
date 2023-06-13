@@ -1,6 +1,6 @@
 #include <assert.h>
 
-#include "gpio.h"
+#include "framework.h"
 
 /* This is an x86/amd64-specific assembly breakpoint instruction that
  * causes the process that executes it to trap to its debugger.  It

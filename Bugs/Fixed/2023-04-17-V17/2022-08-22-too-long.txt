@@ -30,3 +30,10 @@ ANALYSIS:
 
 Refactored device_emu.c into separate modules and wrapped overly-long
 lines properly.  framework.c problems still remain.
+
+2023-06-13 update:
+
+Refactored framework.c into separate modules as well.  This addresses
+the original bug, but there are some new problems: the modules expose
+some global variables.  A cleaner interface with no exposed globals
+would be a better abstraction.  Will add a bug to investigate.

@@ -1,0 +1,14 @@
+
+SUBJECT:
+
+    framework modules
+    device emulator modules
+
+OBSERVED:
+
+    Modules expose global variables to callers.
+
+EXPECTED:
+
+    Clean interfaces with get/set methods and no exposed globals.
+
