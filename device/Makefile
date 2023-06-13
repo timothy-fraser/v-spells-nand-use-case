@@ -35,6 +35,11 @@ $(BINDIR)/test_device : test_device.c $(LIBDIR)/libdevice.a \
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(BINDIR)/test_device test_device.c \
 		-ldevice
 
+$(BINDIR)/test_ioregs : test_ioregs.c test_patterns.h test_patterns.s \
+		de_ioregs.o
+	$(CC) $(CFLAGS) -o $(BINDIR)/test_ioregs test_ioregs.c \
+		test_patterns.s de_ioregs.o
 
 clean :
-	rm -f $(LIBDIR)/libdevice.a $(BINDIR)/test_device $(OBJS)
+	rm -f $(LIBDIR)/libdevice.a $(BINDIR)/test_device $(BINDIR)/test_gpio \
+		$(OBJS)
