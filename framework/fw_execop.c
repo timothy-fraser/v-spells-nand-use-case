@@ -30,17 +30,13 @@ int
 exec_write(const unsigned char* buffer, unsigned int offset,
 	unsigned int size) {
 	
-	unsigned int bytes_per_page = NUM_BYTES;
-	unsigned int pages_per_block = NUM_PAGES;
-	unsigned int blocks_per_chip = NUM_BLOCKS;
-
 	unsigned int bytes_left = size;
 	unsigned int cursor = 0;
 
-	unsigned char byte_addr = offset % bytes_per_page;
-	unsigned char page_addr = offset / pages_per_block;
-	unsigned char block_addr = offset /
-		(pages_per_block * blocks_per_chip);
+	unsigned char block_addr = offset / (NUM_PAGES * NUM_BYTES);
+	offset %= (NUM_PAGES * NUM_BYTES);
+	unsigned char page_addr = offset / NUM_BYTES;
+	unsigned char byte_addr = offset % NUM_BYTES;
 
 	unsigned int size_to_write;
 
@@ -64,12 +60,12 @@ exec_write(const unsigned char* buffer, unsigned int offset,
 	i++;
 
 	do {
-		size_to_write = bytes_per_page;
+		size_to_write = NUM_BYTES;
 		if (offset != 0) {
-			size_to_write = bytes_per_page - offset;
+			size_to_write = NUM_BYTES - offset;
 			offset = 0;
 		}
-		if (bytes_left < bytes_per_page &&
+		if (bytes_left < NUM_BYTES &&
 			bytes_left < size_to_write) {
 			size_to_write = bytes_left;
 		}
@@ -117,18 +113,14 @@ exec_write(const unsigned char* buffer, unsigned int offset,
 int
 exec_read(unsigned char* buffer, unsigned int offset, unsigned int size) {
 	
-	unsigned int bytes_per_page = NUM_BYTES;
-	unsigned int pages_per_block = NUM_PAGES;
-	unsigned int blocks_per_chip = NUM_BLOCKS;
-
 	unsigned int bytes_left = size;
 	unsigned int cursor = 0;
 
-	unsigned char byte_addr = offset % bytes_per_page;
-	unsigned char page_addr = offset / pages_per_block;
-	unsigned char block_addr = offset / (pages_per_block *
-		blocks_per_chip);
-
+	unsigned char block_addr = offset / (NUM_PAGES * NUM_BYTES);
+	offset %= (NUM_PAGES * NUM_BYTES);
+	unsigned char page_addr = offset / NUM_BYTES;
+	unsigned char byte_addr = offset % NUM_BYTES;
+	
 	unsigned int size_to_read;
 
 	struct nand_operation operation;
@@ -160,12 +152,12 @@ exec_read(unsigned char* buffer, unsigned int offset, unsigned int size) {
 		instructions[i++].ctx.waitrdy.timeout_ms =
 			TIMEOUT_READ_PAGE_US;
 	
-		size_to_read = bytes_per_page;
+		size_to_read = NUM_BYTES;
 		if (offset != 0) {
-			size_to_read = bytes_per_page - offset;
+			size_to_read = NUM_BYTES - offset;
 			offset = 0;
 		}
-		if (bytes_left < bytes_per_page && bytes_left < size_to_read) {
+		if (bytes_left < NUM_BYTES && bytes_left < size_to_read) {
 			size_to_read = bytes_left;
 		}
 
