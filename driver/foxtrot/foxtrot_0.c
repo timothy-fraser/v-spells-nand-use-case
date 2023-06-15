@@ -89,12 +89,12 @@ int exec_op(struct nand_operation *commands)
 			}
 			break;
 		case NAND_OP_DATA_IN_INSTR:
-			nand_program(command.ctx.data.buf.in, 
-				command.ctx.data.len);
+			nand_program(command.ctx.data_in.buf, 
+				command.ctx.data_in.len);
 			break;
 		case NAND_OP_DATA_OUT_INSTR:
-			nand_read(command.ctx.data.buf.out,
-				command.ctx.data.len);
+			nand_read(command.ctx.data_out.buf,
+				command.ctx.data_out.len);
 			break;
 		case NAND_OP_WAITRDY_INSTR:
 			if (nand_wait(command.ctx.waitrdy.timeout_ms))

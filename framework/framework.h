@@ -19,11 +19,9 @@
  * they are in.  We know the addresses of all the functions in this .c
  * file and can tell when the tracee's instruction pointer is within a
  * given function.  The following predicates test whether an
- * instruction pointer value lies within a given function.  The
- * predicates identify the last instruction of a given function by
- * counting back from the next function in the program text, so if you
- * add new functions to this file or re-arrange old ones you may need
- * to tweak these predicates.
+ * instruction pointer value lies within a given function.  If you
+ * modify the functions they reference and change the lengths of their
+ * program text, you'll need to update the predicates.
  */
 
 /* Return true iff function start f <= address a < (f + fxn length l) */
@@ -34,6 +32,21 @@
 #define GPIO_GET_LENGTH 0x43  /* length of gpio_get() program text */
 #define RIP_IN_GPIO_SET(a) RIP_IN_FUNCTION(a, &gpio_set, GPIO_SET_LENGTH)
 #define RIP_IN_GPIO_GET(a) RIP_IN_FUNCTION(a, &gpio_get, GPIO_GET_LENGTH)
+
+/* The NAND_OP_ADDR_INSTR instruction has an array of addresses.  The
+ * number of cells in the array that contain meaningful data depends
+ * on the preceeding NAND_OP_CMD_INSTR instruction.  Data in and out
+ * instructions need three addresses: erase block, page, and byte.
+ * Erase instructions need only one: block.
+ */
+#define NAND_INSTR_BLOCK 0  /* index of erase block number */
+#define NAND_INSTR_PAGE  1  /* index of page number */
+#define NAND_INSTR_BYTE  2  /* index of byte offset */
+
+#define NAND_INSTR_NUM_ADDR_IO    3
+#define NAND_INSTR_NUM_ADDR_ERASE 1
+#define NAND_INSTR_NUM_ADDR_MAX   NAND_INSTR_NUM_ADDR_IO
+
 
 enum nand_op_instr_type {
 	NAND_OP_CMD_INSTR,
@@ -49,15 +62,17 @@ struct nand_op_cmd_instr {
 
 struct nand_op_addr_instr {
 	unsigned int naddrs;
-	const unsigned char* addrs; // [0]BLOCK [1]PAGE [2]BYTE
+	unsigned char addrs[ NAND_INSTR_NUM_ADDR_MAX ];
 };
 
-struct nand_op_data_instr {
+struct nand_op_data_in_instr {  /* write to device */
 	unsigned int len;
-	union {
-		const void* in;
-		void* out;
-	} buf;
+	const unsigned char *buf;
+};
+
+struct nand_op_data_out_instr {  /* read from device */
+	unsigned int len;
+	unsigned char *buf;
 };
 
 struct nand_op_waitrdy_instr {
@@ -69,14 +84,15 @@ struct nand_op_instr {
 	union {
 		struct nand_op_cmd_instr cmd;
 		struct nand_op_addr_instr addr;
-		struct nand_op_data_instr data;
+		struct nand_op_data_in_instr data_in;
+		struct nand_op_data_out_instr data_out;
 		struct nand_op_waitrdy_instr waitrdy;
 	} ctx;
 };
 
 struct nand_operation {
-	const struct nand_op_instr* instrs;
 	unsigned int ninstrs;
+	const struct nand_op_instr* instrs;
 };
 
 struct nand_storage_chip

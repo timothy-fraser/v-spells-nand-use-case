@@ -57,9 +57,11 @@ exec_write(const unsigned char* buffer, unsigned int offset,
 	instructions[i++].ctx.cmd.opcode = C_PROGRAM_SETUP;
 
 	instructions[i].type = NAND_OP_ADDR_INSTR;
-	const unsigned char start_addr[] = {block_addr, page_addr, byte_addr};
-	instructions[i].ctx.addr.naddrs = 3;
-	instructions[i++].ctx.addr.addrs = start_addr;
+	instructions[i].ctx.addr.naddrs = NAND_INSTR_NUM_ADDR_IO;
+	instructions[i].ctx.addr.addrs[ NAND_INSTR_BLOCK ] = block_addr;
+	instructions[i].ctx.addr.addrs[ NAND_INSTR_PAGE ]  = page_addr;
+	instructions[i].ctx.addr.addrs[ NAND_INSTR_BYTE ]  = byte_addr;
+	i++;
 
 	do {
 		size_to_write = bytes_per_page;
@@ -73,8 +75,8 @@ exec_write(const unsigned char* buffer, unsigned int offset,
 		}
 		operation.ninstrs++;
 		instructions[i].type = NAND_OP_DATA_IN_INSTR;
-		instructions[i].ctx.data.len = size_to_write;
-		instructions[i++].ctx.data.buf.in = &buffer[cursor];
+		instructions[i].ctx.data_in.len = size_to_write;
+		instructions[i++].ctx.data_in.buf = &buffer[cursor];
 
 		operation.ninstrs++;
 		instructions[i].type = NAND_OP_CMD_INSTR;
@@ -142,9 +144,11 @@ exec_read(unsigned char* buffer, unsigned int offset, unsigned int size) {
 	instructions[i++].ctx.cmd.opcode = C_READ_SETUP;
 
 	instructions[i].type = NAND_OP_ADDR_INSTR;
-	const unsigned char start_addr[] = {block_addr, page_addr, byte_addr};
-	instructions[i].ctx.addr.naddrs = 3;
-	instructions[i++].ctx.addr.addrs = start_addr;
+	instructions[i].ctx.addr.naddrs = NAND_INSTR_NUM_ADDR_IO;
+	instructions[i].ctx.addr.addrs[ NAND_INSTR_BLOCK ] = block_addr;
+	instructions[i].ctx.addr.addrs[ NAND_INSTR_PAGE ]  = page_addr;
+	instructions[i].ctx.addr.addrs[ NAND_INSTR_BYTE ]  = byte_addr;
+	i++;
 
 	do {
 		operation.ninstrs++;
@@ -167,8 +171,8 @@ exec_read(unsigned char* buffer, unsigned int offset, unsigned int size) {
 
 		operation.ninstrs++;
 		instructions[i].type = NAND_OP_DATA_OUT_INSTR;
-		instructions[i].ctx.data.len = size_to_read;
-		instructions[i++].ctx.data.buf.out = &buffer[cursor];
+		instructions[i].ctx.data_out.len = size_to_read;
+		instructions[i++].ctx.data_out.buf = &buffer[cursor];
 
 		cursor += size_to_read;
 		bytes_left -= size_to_read;
@@ -235,9 +239,9 @@ exec_erase(unsigned int offset, unsigned int size) {
 	instructions[i++].ctx.cmd.opcode = C_ERASE_SETUP;
 
 	instructions[i].type = NAND_OP_ADDR_INSTR;
-	const unsigned char start_addr[] = {start_block_addr};
-	instructions[i].ctx.addr.naddrs = 1;
-	instructions[i++].ctx.addr.addrs = start_addr;
+	instructions[i].ctx.addr.naddrs = NAND_INSTR_NUM_ADDR_ERASE;
+	instructions[i].ctx.addr.addrs[ NAND_INSTR_BLOCK ] = start_block_addr;
+	i++;
 
 	for (int j = start_block_addr; j <= end_block_addr; j++) {
 		operation.ninstrs++;
