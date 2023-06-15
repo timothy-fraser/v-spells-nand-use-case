@@ -1,15 +1,96 @@
 // Copyright (c) 2022 Provatek, LLC.
 
 #include <sys/types.h>
+#include <assert.h>
+#include <stdio.h>
 
 #include "device_emu.h"
 #include "driver.h"
 #include "framework.h"
 #include "fw_execop.h"
 
-extern struct nand_driver driver;  /* from framework.c */
+extern struct nand_driver driver;    /* from framework.c */
+
+/* These constants indicate how many NAND instructions are needed in
+ * an operation for each page read or programmed and for each block
+ * erased.
+ */
+
+#define DATA_XFER_INSTRUCTIONS 3     /* xfer, execute, wait */
+#define ERASE_INSTRUCTIONS     2     /* execute, wait */
 
 
+/* instruction_count_data_xfer()
+ *
+ * in:     byte_addr - byte offset from start of page
+ *         size      - size of transfer in bytes
+ * out:    nothing
+ * return: number of NAND instructions needed
+ *
+ * Returns the number of NAND instructions needed for the read or
+ * program operation described by the input parms.
+ *
+ */
+
+static unsigned int
+instruction_count_data_xfer(unsigned int byte_addr,
+			    unsigned int size) {
+
+	unsigned int count = 0; /* the instruction count accumulates here */
+
+	count++;    /* read or program setup instruction */
+	count++;    /* address instruction */
+
+	/* The device transfers data in whole pages, so we need to
+	 * consider the bytes of the first page that preceed
+	 * 'byte_addr' as part of our data size.  After the following
+	 * adjustment, we can proceed with our calculations as if the
+	 * beginning of all data transfers are page-aligned.
+	 */
+	size += byte_addr;
+
+	/* Add in the instructions to handle all the whole pages. */
+	count += DATA_XFER_INSTRUCTIONS * (unsigned int)(size / NUM_BYTES);
+
+	/* Add an additional set of instructions to handle any final
+	 * partial page.
+	 */
+	count += (size % NUM_BYTES ? DATA_XFER_INSTRUCTIONS : 0);
+	
+	return count;
+
+} /* instruction_count_data_xfer() */
+
+
+/* instruction_count_erase()
+ *
+ * in:     start_block_addr - number of first block to erase
+ *         end_block_addr   - number of last block to erase
+ * out:    nothing
+ * return: number of NAND instructions needed
+ *
+ * Returns the number of NAND instructions needed for the erase operation
+ * described by the input parms.
+ *
+ */
+
+static unsigned int
+instruction_count_erase(unsigned int start_block_addr,
+			unsigned int end_block_addr) {
+
+	unsigned int count = 0; /* the instruction count accumulates here */
+
+	count++;    /* erase setup instruction */
+	count++;    /* address instruction */
+
+	count += ERASE_INSTRUCTIONS * ((end_block_addr - start_block_addr)
+		+ 1);
+	
+	return count;
+
+} /* instruction_count_erase() */
+
+	
 /* exec_write()
  *
  * in:     buffer - array of bytes to write to storage device
@@ -48,7 +129,7 @@ exec_write(const unsigned char* buffer, unsigned int offset,
 	operation.instrs = instructions;
 
 	operation.ninstrs = 2; // SETUP + ADDR INSTRUCTION
-
+	
 	instructions[i].type = NAND_OP_CMD_INSTR;
 	instructions[i++].ctx.cmd.opcode = C_PROGRAM_SETUP;
 
@@ -69,6 +150,7 @@ exec_write(const unsigned char* buffer, unsigned int offset,
 			bytes_left < size_to_write) {
 			size_to_write = bytes_left;
 		}
+
 		operation.ninstrs++;
 		instructions[i].type = NAND_OP_DATA_IN_INSTR;
 		instructions[i].ctx.data_in.len = size_to_write;
@@ -88,6 +170,11 @@ exec_write(const unsigned char* buffer, unsigned int offset,
 
 	} while(bytes_left > 0);
 
+	printf("Op: %u, calc: %u.\n", operation.ninstrs,
+	       instruction_count_data_xfer(byte_addr, size));
+	assert(operation.ninstrs == instruction_count_data_xfer(byte_addr,
+		size));
+	
 	if (driver.operation.exec_op(&operation))
 		return -1;  /* timeout */
 
@@ -171,6 +258,9 @@ exec_read(unsigned char* buffer, unsigned int offset, unsigned int size) {
 
 	} while(bytes_left > 0);
 
+	assert(operation.ninstrs == instruction_count_data_xfer(byte_addr,
+		size));
+	
 	if (driver.operation.exec_op(&operation))
 		return -1;  /* timeout */
 
@@ -246,6 +336,9 @@ exec_erase(unsigned int offset, unsigned int size) {
 			TIMEOUT_ERASE_BLOCK_US;
 	}
 
+	assert(operation.ninstrs == instruction_count_erase(start_block_addr,
+		end_block_addr));
+	
 	if (driver.operation.exec_op(&operation))
 		return -1;  /* timeout */
 
