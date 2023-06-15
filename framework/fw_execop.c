@@ -1,8 +1,8 @@
 // Copyright (c) 2022 Provatek, LLC.
 
 #include <sys/types.h>
+#include <stdlib.h>
 #include <assert.h>
-#include <stdio.h>
 
 #include "device_emu.h"
 #include "driver.h"
@@ -122,22 +122,24 @@ exec_write(const unsigned char* buffer, unsigned int offset,
 	unsigned int size_to_write;
 
 	struct nand_operation operation;
-	struct nand_op_instr instructions[4096];
-	
-	int i = 0;
-	operation.ninstrs = 0;
-	operation.instrs = instructions;
 
+	int ret_val = 0;    /* optimistically presume success */
+
+	operation.instrs = malloc(instruction_count_data_xfer(byte_addr,
+		size) * sizeof(struct nand_op_instr));
+	assert(operation.instrs != NULL);
+
+	int i = 0;
 	operation.ninstrs = 2; // SETUP + ADDR INSTRUCTION
 	
-	instructions[i].type = NAND_OP_CMD_INSTR;
-	instructions[i++].ctx.cmd.opcode = C_PROGRAM_SETUP;
+	operation.instrs[i].type = NAND_OP_CMD_INSTR;
+	operation.instrs[i++].ctx.cmd.opcode = C_PROGRAM_SETUP;
 
-	instructions[i].type = NAND_OP_ADDR_INSTR;
-	instructions[i].ctx.addr.naddrs = NAND_INSTR_NUM_ADDR_IO;
-	instructions[i].ctx.addr.addrs[ NAND_INSTR_BLOCK ] = block_addr;
-	instructions[i].ctx.addr.addrs[ NAND_INSTR_PAGE ]  = page_addr;
-	instructions[i].ctx.addr.addrs[ NAND_INSTR_BYTE ]  = byte_addr;
+	operation.instrs[i].type = NAND_OP_ADDR_INSTR;
+	operation.instrs[i].ctx.addr.naddrs = NAND_INSTR_NUM_ADDR_IO;
+	operation.instrs[i].ctx.addr.addrs[ NAND_INSTR_BLOCK ] = block_addr;
+	operation.instrs[i].ctx.addr.addrs[ NAND_INSTR_PAGE ]  = page_addr;
+	operation.instrs[i].ctx.addr.addrs[ NAND_INSTR_BYTE ]  = byte_addr;
 	i++;
 
 	do {
@@ -152,17 +154,17 @@ exec_write(const unsigned char* buffer, unsigned int offset,
 		}
 
 		operation.ninstrs++;
-		instructions[i].type = NAND_OP_DATA_IN_INSTR;
-		instructions[i].ctx.data_in.len = size_to_write;
-		instructions[i++].ctx.data_in.buf = &buffer[cursor];
+		operation.instrs[i].type = NAND_OP_DATA_IN_INSTR;
+		operation.instrs[i].ctx.data_in.len = size_to_write;
+		operation.instrs[i++].ctx.data_in.buf = &buffer[cursor];
 
 		operation.ninstrs++;
-		instructions[i].type = NAND_OP_CMD_INSTR;
-		instructions[i++].ctx.cmd.opcode = C_PROGRAM_EXECUTE;
+		operation.instrs[i].type = NAND_OP_CMD_INSTR;
+		operation.instrs[i++].ctx.cmd.opcode = C_PROGRAM_EXECUTE;
 
 		operation.ninstrs++;
-		instructions[i].type = NAND_OP_WAITRDY_INSTR;
-		instructions[i++].ctx.waitrdy.timeout_ms =
+		operation.instrs[i].type = NAND_OP_WAITRDY_INSTR;
+		operation.instrs[i++].ctx.waitrdy.timeout_ms =
 			TIMEOUT_WRITE_PAGE_US;
 
 		cursor += size_to_write;
@@ -170,15 +172,15 @@ exec_write(const unsigned char* buffer, unsigned int offset,
 
 	} while(bytes_left > 0);
 
-	printf("Op: %u, calc: %u.\n", operation.ninstrs,
-	       instruction_count_data_xfer(byte_addr, size));
 	assert(operation.ninstrs == instruction_count_data_xfer(byte_addr,
 		size));
 	
-	if (driver.operation.exec_op(&operation))
-		return -1;  /* timeout */
+	if (driver.operation.exec_op(&operation)) {
+		ret_val = -1;  /* timeout */
+	}
 
-	return 0;
+	free(operation.instrs);
+	return ret_val;
 }
 
 
@@ -211,32 +213,34 @@ exec_read(unsigned char* buffer, unsigned int offset, unsigned int size) {
 	unsigned int size_to_read;
 
 	struct nand_operation operation;
-	struct nand_op_instr instructions[4096];
+
+	int ret_val = 0;    /* optimistically presume success */
+
+	operation.instrs = malloc(instruction_count_data_xfer(byte_addr,
+		size) * sizeof(struct nand_op_instr));
+	assert(operation.instrs != NULL);
 	
 	int i = 0;
-	operation.ninstrs = 0;
-	operation.instrs = instructions;
-
 	operation.ninstrs = 2; // SETUP + ADDR INSTRUCTION
 
-	instructions[i].type = NAND_OP_CMD_INSTR;
-	instructions[i++].ctx.cmd.opcode = C_READ_SETUP;
+	operation.instrs[i].type = NAND_OP_CMD_INSTR;
+	operation.instrs[i++].ctx.cmd.opcode = C_READ_SETUP;
 
-	instructions[i].type = NAND_OP_ADDR_INSTR;
-	instructions[i].ctx.addr.naddrs = NAND_INSTR_NUM_ADDR_IO;
-	instructions[i].ctx.addr.addrs[ NAND_INSTR_BLOCK ] = block_addr;
-	instructions[i].ctx.addr.addrs[ NAND_INSTR_PAGE ]  = page_addr;
-	instructions[i].ctx.addr.addrs[ NAND_INSTR_BYTE ]  = byte_addr;
+	operation.instrs[i].type = NAND_OP_ADDR_INSTR;
+	operation.instrs[i].ctx.addr.naddrs = NAND_INSTR_NUM_ADDR_IO;
+	operation.instrs[i].ctx.addr.addrs[ NAND_INSTR_BLOCK ] = block_addr;
+	operation.instrs[i].ctx.addr.addrs[ NAND_INSTR_PAGE ]  = page_addr;
+	operation.instrs[i].ctx.addr.addrs[ NAND_INSTR_BYTE ]  = byte_addr;
 	i++;
 
 	do {
 		operation.ninstrs++;
-		instructions[i].type = NAND_OP_CMD_INSTR;
-		instructions[i++].ctx.cmd.opcode = C_READ_EXECUTE;
+		operation.instrs[i].type = NAND_OP_CMD_INSTR;
+		operation.instrs[i++].ctx.cmd.opcode = C_READ_EXECUTE;
 
 		operation.ninstrs++;
-		instructions[i].type = NAND_OP_WAITRDY_INSTR;
-		instructions[i++].ctx.waitrdy.timeout_ms =
+		operation.instrs[i].type = NAND_OP_WAITRDY_INSTR;
+		operation.instrs[i++].ctx.waitrdy.timeout_ms =
 			TIMEOUT_READ_PAGE_US;
 	
 		size_to_read = NUM_BYTES;
@@ -249,9 +253,9 @@ exec_read(unsigned char* buffer, unsigned int offset, unsigned int size) {
 		}
 
 		operation.ninstrs++;
-		instructions[i].type = NAND_OP_DATA_OUT_INSTR;
-		instructions[i].ctx.data_out.len = size_to_read;
-		instructions[i++].ctx.data_out.buf = &buffer[cursor];
+		operation.instrs[i].type = NAND_OP_DATA_OUT_INSTR;
+		operation.instrs[i].ctx.data_out.len = size_to_read;
+		operation.instrs[i++].ctx.data_out.buf = &buffer[cursor];
 
 		cursor += size_to_read;
 		bytes_left -= size_to_read;
@@ -262,9 +266,10 @@ exec_read(unsigned char* buffer, unsigned int offset, unsigned int size) {
 		size));
 	
 	if (driver.operation.exec_op(&operation))
-		return -1;  /* timeout */
+		ret_val = -1;  /* timeout */
 
-	return 0;
+	free(operation.instrs);
+	return ret_val;
 }
 
 
@@ -309,30 +314,33 @@ exec_erase(unsigned int offset, unsigned int size) {
 		(NUM_PAGES * NUM_BYTES)) + 0.5;
 
 	struct nand_operation operation;
-	struct nand_op_instr instructions[4096];
+
+	int ret_val = 0;    /* optimistically presume success */
+
+	operation.instrs = malloc(instruction_count_erase(start_block_addr,
+		end_block_addr) * sizeof(struct nand_op_instr));
+	assert(operation.instrs != NULL);
 	
 	int i = 0;
-	operation.ninstrs = 0;
-	operation.instrs = instructions;
-
 	operation.ninstrs = 2; // SETUP + ADDR INSTRUCTION
 
-	instructions[i].type = NAND_OP_CMD_INSTR;
-	instructions[i++].ctx.cmd.opcode = C_ERASE_SETUP;
+	operation.instrs[i].type = NAND_OP_CMD_INSTR;
+	operation.instrs[i++].ctx.cmd.opcode = C_ERASE_SETUP;
 
-	instructions[i].type = NAND_OP_ADDR_INSTR;
-	instructions[i].ctx.addr.naddrs = NAND_INSTR_NUM_ADDR_ERASE;
-	instructions[i].ctx.addr.addrs[ NAND_INSTR_BLOCK ] = start_block_addr;
+	operation.instrs[i].type = NAND_OP_ADDR_INSTR;
+	operation.instrs[i].ctx.addr.naddrs = NAND_INSTR_NUM_ADDR_ERASE;
+	operation.instrs[i].ctx.addr.addrs[ NAND_INSTR_BLOCK ] =
+		start_block_addr;
 	i++;
 
 	for (int j = start_block_addr; j <= end_block_addr; j++) {
 		operation.ninstrs++;
-		instructions[i].type = NAND_OP_CMD_INSTR;
-		instructions[i++].ctx.cmd.opcode = C_ERASE_EXECUTE;
+		operation.instrs[i].type = NAND_OP_CMD_INSTR;
+		operation.instrs[i++].ctx.cmd.opcode = C_ERASE_EXECUTE;
 
 		operation.ninstrs++;
-		instructions[i].type = NAND_OP_WAITRDY_INSTR;
-		instructions[i++].ctx.waitrdy.timeout_ms =
+		operation.instrs[i].type = NAND_OP_WAITRDY_INSTR;
+		operation.instrs[i++].ctx.waitrdy.timeout_ms =
 			TIMEOUT_ERASE_BLOCK_US;
 	}
 
@@ -340,7 +348,8 @@ exec_erase(unsigned int offset, unsigned int size) {
 		end_block_addr));
 	
 	if (driver.operation.exec_op(&operation))
-		return -1;  /* timeout */
+		ret_val = -1;  /* timeout */
 
-	return 0;
+	free(operation.instrs);
+	return ret_val;
 }

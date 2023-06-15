@@ -92,7 +92,7 @@ struct nand_op_instr {
 
 struct nand_operation {
 	unsigned int ninstrs;
-	const struct nand_op_instr* instrs;
+	struct nand_op_instr* instrs;
 };
 
 struct nand_storage_chip
