@@ -8,23 +8,25 @@ DRIVERDIR = ../driver
 CFLAGS = -g -Wall -I$(DEVICEDIR) -I$(FRAMEWORKDIR) -I$(DRIVERDIR)
 LDFLAGS = -L $(LIBDIR)
 
-all : $(LIBDIR)/libtester.a $(LIBDIR)/libkilo_tester.a
+OBJS = st_data.o st_deterministic.o st_dib.o
+STLIB = $(LIBDIR)/libsystemtest.a
 
-tester.o : tester.c tester.h $(DEVICEDIR)/device_emu.h \
-		$(FRAMEWORKDIR)/framework.h $(DRIVERDIR)/driver.h
-	$(CC) $(CFLAGS) -c tester.c
+# all : $(LIBDIR)/libtester.a $(LIBDIR)/libkilo_tester.a
+all : $(STLIB)
 
-kilo_tester.o : kilo_tester.c tester.h $(DEVICEDIR)/device_emu.h \
-		$(FRAMEWORKDIR)/framework.h $(DRIVERDIR)/driver.h
-	$(CC) $(CFLAGS) -c kilo_tester.c
+st_data.o : st_data.c st_data.h
+	$(CC) $(CFLAGS) -c st_data.c
 
-$(LIBDIR)/libtester.a : tester.o
-	$(AR) cr $(LIBDIR)/libtester.a tester.o
+st_deterministic.o : st_deterministic.c tester.h \
+		$(FRAMEWORKDIR)/framework.h
+	$(CC) $(CFLAGS) -c st_deterministic.c
 
-$(LIBDIR)/libkilo_tester.a : kilo_tester.o
-	$(AR) cr $(LIBDIR)/libkilo_tester.a kilo_tester.o
+st_dib.o : st_dib.c tester.h $(FRAMEWORKDIR)/framework.h \
+		$(DEVICEDIR)/device_emu.h
+	$(CC) $(CFLAGS) -c st_dib.c
 
+$(STLIB) : $(OBJS)
+	$(AR) cr $(STLIB) $(OBJS)
 
 clean :
-	rm -f $(LIBDIR)/libtester.a $(LIBDIR)/libkilo_tester.a \
-		tester.o kilo_tester.o
+	rm -f $(STLIB) $(OBJS)

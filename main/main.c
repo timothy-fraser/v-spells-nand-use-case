@@ -1,17 +1,8 @@
 // Copyright (c) 2022 Provatek, LLC.
 
-#include <sys/ptrace.h>
 #include <sys/types.h>
-#include <sys/wait.h>
 #include <unistd.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <stddef.h>
-#include <signal.h>
 #include <stdio.h>
-#include <string.h>
-#include <sys/user.h>
-#include <time.h>
 
 #include "device_emu.h"
 #include "framework.h"
@@ -34,26 +25,49 @@
  */
 volatile unsigned long ioregisters = 0;
 
-int main()
-{
-	pid_t child_pid; /* receives what fork() gives us. */
 
-	switch (child_pid = fork())
-	{
+int
+main(int argc, const char *argv[]) {
+	
+	pid_t child_pid; /* receives what fork() gives us. */
+	struct nand_device *dib_old;  /* DIB before framework/driver init */
+	struct nand_device *dib_new;  /* DIB after framework/driver init */
+	
+	switch (child_pid = fork()) {
 
 	case -1: /* fork() failed. */
 		perror("Failed to fork");
-		exit(-1);
+		return -1;
 
 	case 0: /* I am the child. */
-		tester_main(&ioregisters);
+
+		/* Create an initial DIB and then initialize the
+		 * framework and whatever driver we've got configured
+		 * in the makefiles.  For some drivers, the driver and
+		 * the framework simply return the initial DIB
+		 * unchanged.  Other drivers (the kilo drivers, for
+		 * example) add a new device to the DIB and return the
+		 * updated DIB.
+		 */
+		dib_old = st_dib_init();
+		dib_new = init_framework(&ioregisters, dib_old);
+
+		/* For drivers that update the DIB, verify that the
+		 * new DIB is correct.
+		 */
+		if ((dib_old != dib_new) &&           /* if DIB updated ... */
+		    (st_dib_test(dib_old, dib_new)))  /* ... verify DIB. */
+			return -1;
+
+		/* Run a small set of deterministic system tests. */
+		if (st_deterministic()) return -1;
+
 		break;
 
 	default: /* I am the parent; child_pid holds child pid. */
 		device_init(&ioregisters, child_pid);
 	}
 
-	/* Both child and parent end up here. */
-	exit(0);
+	return 0;
 
 } /* main() */
