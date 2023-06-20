@@ -110,7 +110,7 @@ main(int argc, char * const argv[]) {
 		switch (mode) {
 			
 		case cl_stochastic:
-			printf("%ld stochastic tests.\n", num_tests);
+			if (st_stochastic(num_tests)) return -1;
 			break;
 			
 		case cl_deterministic:
