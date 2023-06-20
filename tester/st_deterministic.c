@@ -8,14 +8,7 @@
 
 #define STORAGE_ADDR 0
 
-/* These constants define the amount of data we'll be storing and
- * retrievig from the device in terms of rows and columns of
- * characters we can neatly print to the console.
- */
-#define DATA_ROWS    5
-#define DATA_COLUMNS 60
-#define DATA_SIZE    (DATA_ROWS * DATA_COLUMNS)
-
+#define DATA_SIZE    300   /* how many bytes to write to/read from device */
 
 static unsigned char data[DATA_SIZE];
 static unsigned char dest[DATA_SIZE];
@@ -41,7 +34,7 @@ st_deterministic(void) {
 	
 	data_init(data, DATA_SIZE);
 	puts("Data to write to device:");
-	data_print(data, DATA_ROWS, DATA_COLUMNS);
+	data_print(data, DATA_SIZE);
 
 	puts("Writing data...");
 	if (write_nand(data, STORAGE_ADDR, DATA_SIZE)) {
@@ -57,11 +50,11 @@ st_deterministic(void) {
 	}		
 
 	puts("Data read from device (ideally identical):");
-	data_print(dest, DATA_ROWS, DATA_COLUMNS);
+	data_print(dest, DATA_SIZE);
 	if (DATA_SIZE == (index = data_compare(data, dest, DATA_SIZE))) {
-		puts("Comparison confirms match.\n");
+		puts("\nPass - comparison confirms match.\n");
 	} else {
-		printf("Buffers differ at index %u.\n", index);
+		printf("\nFail - buffers differ at index %u.\n", index);
 		return -1;
 	}
 
@@ -82,11 +75,12 @@ st_deterministic(void) {
 	}
 
 	puts("Data read from device (ideally zeroed):");
-	data_print(dest, DATA_ROWS, DATA_COLUMNS);
+	data_print(dest, DATA_SIZE);
 	if (DATA_SIZE == (index = data_confirm_zeroes(dest, DATA_SIZE))) {
-		puts("Examination confirms all-zeroes.\n");
+		puts("\nPass - examination confirms all-zeroes.\n");
 	} else {
-		printf("Buffer has non-zero value at index %u.\n", index);
+		printf("\nFail - buffer has non-zero value at index %u.\n",
+			index);
 		return -1;
 	}
 

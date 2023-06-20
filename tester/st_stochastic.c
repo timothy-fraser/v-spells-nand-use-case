@@ -10,9 +10,7 @@
  * retrievig from the device in terms of rows and columns of
  * characters we can neatly print to the console.
  */
-#define DATA_ROWS    5
-#define DATA_COLUMNS 60
-#define DATA_SIZE    (DATA_ROWS * DATA_COLUMNS)
+#define DATA_SIZE    300   /* how many bytes to write to/read from device */
 
 
 static unsigned char data[DATA_SIZE];
@@ -43,7 +41,7 @@ st_stochastic(long num_tests) {
 	
 	data_init(data, DATA_SIZE);
 	puts("Data to write to device:");
-	data_print(data, DATA_ROWS, DATA_COLUMNS);
+	data_print(data, DATA_SIZE);
 
 	puts("Writing data...");
 	if (write_nand(data, STORAGE_ADDR, DATA_SIZE)) {
@@ -59,7 +57,7 @@ st_stochastic(long num_tests) {
 	}		
 
 	puts("Data read from device (ideally identical):");
-	data_print(dest, DATA_ROWS, DATA_COLUMNS);
+	data_print(dest, DATA_SIZE);
 	if (DATA_SIZE == (index = data_compare(data, dest, DATA_SIZE))) {
 		puts("Comparison confirms match.\n");
 	} else {
@@ -84,7 +82,7 @@ st_stochastic(long num_tests) {
 	}
 
 	puts("Data read from device (ideally zeroed):");
-	data_print(dest, DATA_ROWS, DATA_COLUMNS);
+	data_print(dest, DATA_SIZE);
 	if (DATA_SIZE == (index = data_confirm_zeroes(dest, DATA_SIZE))) {
 		puts("Examination confirms all-zeroes.\n");
 	} else {

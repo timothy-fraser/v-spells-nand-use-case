@@ -45,7 +45,7 @@ st_dib_test(struct nand_device *dib_old, struct nand_device *dib_new) {
 	
 	puts("Verifying new DIB...");
 	if (verify_dib(dib_new)) {
-		puts("New DIB is not well-formed.");
+		puts("Fail - new DIB is not well-formed.");
 		return -1;
 	}
 	
@@ -55,11 +55,12 @@ st_dib_test(struct nand_device *dib_old, struct nand_device *dib_new) {
 	 */
 	if (!(dib_new->next_device) ||
 	    (dib_new->next_device != dib_old)) {
-		puts("Driver failed to preserve original DIB entries.");
+		puts("Fail - driver failed to preserve original DIB entries.");
 		return -1;
 	}
 	
-	puts("Confirmed DIB well-formed after driver initialization.\n");
+	puts("Pass - "
+		"confirmed DIB well-formed after driver initialization.\n");
 	
 	return 0;
 

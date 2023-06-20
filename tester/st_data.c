@@ -4,6 +4,8 @@
 
 #include "st_data.h"
 
+#define COLUMNS 64  /* print data in rows that are this wide */
+
 /* Macros for determining if a number corresponds to a character we
  * think is printable and for mapping numbers to printable characters.
  */
@@ -46,21 +48,19 @@ data_init(unsigned char *buffer, unsigned int length) {
  */
 
 void
-data_print(unsigned char *buffer, unsigned int rows, unsigned int columns) {
+data_print(unsigned char *buffer, unsigned int size) {
 
-	unsigned int r, c;    /* row, column indicies into buffer */
+	unsigned int i;       /* index into buffer */
 	unsigned char b;      /* byte to print */
 	
-	for (r = 0; r < rows; r++) {
-		for(c = 0; c < columns; c++) {
-			b = buffer[ r * columns + c ];
-			if (IS_PRINTABLE(b)) {
-				putchar(b);
-			} else {
-				putchar('-');
-			}
+	for (i = 0; i < size; i++) {
+		if ((i % COLUMNS) == 0) putchar('\n');
+		b = buffer[ i ];
+		if (IS_PRINTABLE(b)) {
+			putchar(b);
+		} else {
+			putchar('-');
 		}
-		putchar('\n');
 	}
 	putchar('\n');
 	
