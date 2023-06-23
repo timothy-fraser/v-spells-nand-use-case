@@ -1,7 +1,9 @@
 // Copyright (c) 2022 Provatek, LLC.
 
 #include <sys/types.h>
-
+#ifdef DIAGNOSTICS
+#include <stdio.h>
+#endif
 #include "device_emu.h"
 #include "driver.h"
 #include "framework.h"
@@ -51,15 +53,21 @@ jt_write(unsigned char *buffer, unsigned int offset, unsigned int size) {
 
 	while (bytes_left) {
 		size_to_write = bytes_per_page;
-		if (offset != 0) {
-			size_to_write = bytes_per_page - offset;
-			offset = 0;
+		if (byte_addr != 0) {
+			size_to_write = bytes_per_page - byte_addr;
+			byte_addr = 0;
 		}
 		if (bytes_left < bytes_per_page &&
 			bytes_left < size_to_write) {
 			size_to_write = bytes_left;
 		}
 
+#ifdef DIAGNOSTICS
+		printf("Debug: jt_write() writing %u of %u bytes to device "
+		       "from buffer offset 0x%08x.\n",
+		       size_to_write, size, cursor);
+#endif
+		
 		driver.operation.jump_table.write_buffer(&buffer[cursor], 
 			size_to_write);
 		driver.operation.jump_table.set_register(IOREG_COMMAND, 
@@ -120,13 +128,19 @@ jt_read(unsigned char *buffer, unsigned int offset, unsigned int size) {
 			return -1;  /* timeout */
 			
 		size_to_read = bytes_per_page;
-		if (offset != 0) {
-			size_to_read = bytes_per_page - offset;
-			offset = 0;
+		if (byte_addr != 0) {
+			size_to_read = bytes_per_page - byte_addr;
+			byte_addr = 0;
 		}
 		if (bytes_left < bytes_per_page && bytes_left < size_to_read) {
 			size_to_read = bytes_left;
 		}
+
+#ifdef DIAGNOSTICS
+		printf("Debug: jt_read() reading %u of %u bytes to device "
+		       "from buffer offset 0x%08x.\n",
+		       size_to_read, size, cursor);
+#endif
 
 		driver.operation.jump_table.read_buffer(&buffer[cursor], 
 			size_to_read);

@@ -17,6 +17,7 @@ fw_gpio.o : fw_gpio.c framework.h
 fw_jumptable.o : fw_jumptable.c fw_jumptable.h framework.h \
 		$(DEVICEDIR)/device_emu.h $(DRIVERDIR)/driver.h
 	$(CC) $(CFLAGS) -c fw_jumptable.c
+#	$(CC) $(CFLAGS) -DDIAGNOSTICS -c fw_jumptable.c
 
 fw_execop.o : fw_execop.c fw_execop.h framework.h \
 		$(DEVICEDIR)/device_emu.h $(DRIVERDIR)/driver.h

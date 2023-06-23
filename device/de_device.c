@@ -6,7 +6,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
-#include <stdio.h>
+#include <stdio.h> 
 #include <string.h>
 #include <sys/ptrace.h>
 #include <sys/time.h>
@@ -107,6 +107,11 @@ void handle_watchpoint_ioregisters(pid_t child_pid,
 	peeked = ptrace(PTRACE_PEEKDATA, child_pid, ioregs, NULL);
 	command = (peeked & MASK_COMMAND) >> COMMAND_SHIFT;
 
+#ifdef DIAGNOSTICS	
+	printf("Device emulator in state %02u received command %02u.\n",
+		machine_state, command);
+#endif
+	
 	switch (machine_state) {
 	case MS_INITIAL_STATE:
 		switch (command) {

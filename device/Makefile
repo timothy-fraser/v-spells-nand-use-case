@@ -26,6 +26,7 @@ de_device.o : de_device.c device_emu.h \
 		de_gpio.h \
 		$(FRAMEWORKDIR)/framework.h
 	$(CC) $(CFLAGS) -c de_device.c
+#	$(CC) $(CFLAGS) -DDIAGNOSTICS -c de_device.c
 
 $(LIBDIR)/libdevice.a : $(OBJS)
 	$(AR) cr $(LIBDIR)/libdevice.a $(OBJS)
