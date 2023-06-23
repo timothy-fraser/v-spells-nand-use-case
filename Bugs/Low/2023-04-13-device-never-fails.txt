@@ -35,3 +35,27 @@ multiple device emulator modes, and a simple solution that randomly
 succeeded or failed would make the test results frustratingly
 unpredictable.
 
+2023-06-23:
+
+One possible solution might be to add a function that tests could call
+to switch the device emulator from its default mode of perfect timing
+and an alternate mode where it supports tests of driver timeout
+behavior.  We might implement this function with a breakpoint
+instruction, similar to the GPIO functions.
+
+With this function in place, we might add cases to our tests where the
+tester switches the device to its alternate mode, tries a read,
+program, or erase operation that involves the driver's wait-ready
+loop, and tries to confirm that the driver polls, sleeps, and/or
+eventually times out.
+
+We'd need to think about what these tests want to accomplish, how
+they'd do it, and what device emulator alternate-mode semantics would
+best support that.  The best alternate mode semantics might be "never
+ready," or "not ready the first time but ready subsequently," or
+perhaps something else.
+
+The key idea for this approach is that the driver controls the device
+emulator mode and switches it as it runs though its test cases, rather
+than the driver mode being specified with a command-line switch and
+being fixed for the entire run.
