@@ -11,8 +11,7 @@ LDFLAGS = -L $(LIBDIR)
 OBJS = st_data.o st_deterministic.o st_stochastic.o st_dib.o st_mirror.o
 STLIB = $(LIBDIR)/libsystemtest.a
 
-# all : $(LIBDIR)/libtester.a $(LIBDIR)/libkilo_tester.a
-all : $(STLIB)
+all : $(STLIB) $(BINDIR)/test_mirror
 
 st_data.o : st_data.c st_data.h
 	$(CC) $(CFLAGS) -c st_data.c
