@@ -1,564 +1,441 @@
-Script started on 2022-08-23 12:45:23-04:00
 
-tim@buttscoot: ~/Documents/V-SPELLS/TestRig/testrig-v12$ ./test_alpha_0
+user@host: ~/v-spells-nand-use-case$ ./test_alpha_0
 ALPHA 0 DRIVER
 Test: store 300 bytes to device, retrieve them, and compare.
 
 Data to write to device:
+
 abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
 ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
 qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
 yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
 ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
-
 Writing data...
 Reading data...
 Data read from device (ideally identical):
+
 abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
 ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
 qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
 yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
 ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
 
-Comparison confirms match.
+Pass - comparison confirms match.
 
 Test: erase device blocks, retrieve erased data, and confirm it is zeroed:
 
 Erasing blocks...
 Reading erased blocks...
 Data read from device (ideally zeroed):
+
 ------------------------------------------------------------
 ------------------------------------------------------------
 ------------------------------------------------------------
 ------------------------------------------------------------
 ------------------------------------------------------------
 
-Examination confirms all-zeroes.
+Pass - examination confirms all-zeroes.
 
-
-tim@buttscoot: ~/Documents/V-SPELLS/TestRig/testrig-v12$ ./test_alpha_1
+user@host: ~/v-spells-nand-use-case$ ./test_alpha_1
 ALPHA 1 DRIVER
 Test: store 300 bytes to device, retrieve them, and compare.
 
 Data to write to device:
+
 abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
 ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
 qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
 yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
 ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
-
 Writing data...
 Reading data...
 Data read from device (ideally identical):
+
 abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
 ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
 qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
 yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
 ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
 
-Comparison confirms match.
+Pass - comparison confirms match.
 
 Test: erase device blocks, retrieve erased data, and confirm it is zeroed:
 
 Erasing blocks...
 Reading erased blocks...
 Data read from device (ideally zeroed):
+
 ------------------------------------------------------------
 ------------------------------------------------------------
 ------------------------------------------------------------
 ------------------------------------------------------------
 ------------------------------------------------------------
 
-Examination confirms all-zeroes.
+Pass - examination confirms all-zeroes.
 
-
-tim@buttscoot: ~/Documents/V-SPELLS/TestRig/testrig-v12$ ./test_alpha_2
+user@host: ~/v-spells-nand-use-case$ ./test_alpha_2
 ALPHA 2 DRIVER
 Test: store 300 bytes to device, retrieve them, and compare.
 
 Data to write to device:
+
 abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
 ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
 qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
 yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
 ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
-
 Writing data...
 Reading data...
 Data read from device (ideally identical):
+
 abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
 ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
 qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
 yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
 ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
 
-Comparison confirms match.
+Pass - comparison confirms match.
 
 Test: erase device blocks, retrieve erased data, and confirm it is zeroed:
 
 Erasing blocks...
 Reading erased blocks...
 Data read from device (ideally zeroed):
+
 ------------------------------------------------------------
 ------------------------------------------------------------
 ------------------------------------------------------------
 ------------------------------------------------------------
 ------------------------------------------------------------
 
-Examination confirms all-zeroes.
+Pass - examination confirms all-zeroes.
 
-
-tim@buttscoot: ~/Documents/V-SPELLS/TestRig/testrig-v12$ ./test_alpha_3
+user@host: ~/v-spells-nand-use-case$ ./test_alpha_3
 ALPHA 3 DRIVER
 Test: store 300 bytes to device, retrieve them, and compare.
 
 Data to write to device:
+
 abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
 ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
 qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
 yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
 ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
-
 Writing data...
 Reading data...
 Data read from device (ideally identical):
+
 abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
 ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
 qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
 yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
 ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
 
-Comparison confirms match.
+Pass - comparison confirms match.
 
 Test: erase device blocks, retrieve erased data, and confirm it is zeroed:
 
 Erasing blocks...
 Reading erased blocks...
 Data read from device (ideally zeroed):
+
 ------------------------------------------------------------
 ------------------------------------------------------------
 ------------------------------------------------------------
 ------------------------------------------------------------
 ------------------------------------------------------------
 
-Examination confirms all-zeroes.
+Pass - examination confirms all-zeroes.
 
-
-tim@buttscoot: ~/Documents/V-SPELLS/TestRig/testrig-v12$ ./test_alpha_4
+user@host: ~/v-spells-nand-use-case$ ./test_alpha_4
 ALPHA 4 DRIVER
 Test: store 300 bytes to device, retrieve them, and compare.
 
 Data to write to device:
+
 abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
 ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
 qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
 yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
 ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
-
 Writing data...
 Reading data...
 Data read from device (ideally identical):
+
 abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
 ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
 qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
 yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
 ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghij----
 
-Buffers differ at index 296.
-tim@buttscoot: ~/Documents/V-SPELLS/TestRig/testrig-v12$ ./test_alpha_5
+Fail - buffers differ at index 296.
+
+user@host: ~/v-spells-nand-use-case$ ./test_alpha_5
 ALPHA 5 DRIVER
 Test: store 300 bytes to device, retrieve them, and compare.
 
 Data to write to device:
+
 abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
 ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
 qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
 yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
 ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
-
 Writing data...
 Reading data...
 ^C
 
-tim@buttscoot: ~/Documents/V-SPELLS/TestRig/testrig-v12$ ./test_alpha_6
+user@host: ~/v-spells-nand-use-case$ ./test_alpha_6
 ALPHA 6 DRIVER
 Test: store 300 bytes to device, retrieve them, and compare.
 
 Data to write to device:
+
 abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
 ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
 qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
 yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
 ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
-
 Writing data...
 Reading data...
 Data read from device (ideally identical):
+
 vutsrqponmlkjihgfedcbazyxwvutsrqponmlkjihgfedcbazyxwvutsrqpo
 nmlkjihgfedcbazyxwvutsrqponmlkjihgfedcbazyxwvutsrqponmlkjihg
 fedcbazyxwvutsrqponmlkjihgfedcbazyxwvutsrqponmlkjihgfedcbazy
 xwvutsrqponmlkjihgfedcbazyxwvutsrqponmlkjihgfedcbazyxwvutsrq
 ponmlkjihgfedcbanmlkjihgfedcbazyxwvutsrqponmlkjihgfedcbazyxw
 
-Buffers differ at index 0.
-[?2004h]0;tim@buttscoot: ~/Documents/V-SPELLS/TestRig/testrig-v12[01;32mtim@buttscoot[00m:[01;34m~/Documents/V-SPELLS/TestRig/testrig-v12[00m$ ./test_braco[K[Kvo_0
-[?2004lBRAVO 0 DRIVER
+Fail - buffers differ at index 0.
+
+user@host: ~/v-spells-nand-use-case$ ./test_alpha_7
+ALPHA 7 DRIVER
 Test: store 300 bytes to device, retrieve them, and compare.
 
 Data to write to device:
+
 abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
 ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
 qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
 yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
 ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
-
 Writing data...
 Reading data...
 Data read from device (ideally identical):
+
 abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
 ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
 qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
 yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
 ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
 
-Comparison confirms match.
+Pass - comparison confirms match.
 
 Test: erase device blocks, retrieve erased data, and confirm it is zeroed:
 
 Erasing blocks...
 Reading erased blocks...
 Data read from device (ideally zeroed):
+
 ------------------------------------------------------------
 ------------------------------------------------------------
 ------------------------------------------------------------
 ------------------------------------------------------------
 ------------------------------------------------------------
 
-Examination confirms all-zeroes.
+Pass - examination confirms all-zeroes.
 
-
-tim@buttscoot: ~/Documents/V-SPELLS/TestRig/testrig-v12$ ./test_bravo_1
-BRAVO 1 DRIVER
+user@host: ~/v-spells-nand-use-case$ ./test_alpha_8
+ALPHA 8 DRIVER
 Test: store 300 bytes to device, retrieve them, and compare.
 
 Data to write to device:
+
 abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
 ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
 qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
 yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
 ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
-
 Writing data...
 Reading data...
 Data read from device (ideally identical):
+
 abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
 ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
 qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
 yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
 ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
 
-Comparison confirms match.
+Pass - comparison confirms match.
 
 Test: erase device blocks, retrieve erased data, and confirm it is zeroed:
 
 Erasing blocks...
 Reading erased blocks...
 Data read from device (ideally zeroed):
+
 ------------------------------------------------------------
 ------------------------------------------------------------
 ------------------------------------------------------------
 ------------------------------------------------------------
 ------------------------------------------------------------
 
-Examination confirms all-zeroes.
+Pass - examination confirms all-zeroes.
 
-
-tim@buttscoot: ~/Documents/V-SPELLS/TestRig/testrig-v12$ ./test_bravo_2
-BRAVO 2 DRIVER
-Test: store 300 bytes to device, retrieve them, and compare.
-
-Data to write to device:
-abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
-ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
-qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
-yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
-ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
-
-Writing data...
-Reading data...
-Data read from device (ideally identical):
-abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
-ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
-qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
-yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
-ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
-
-Comparison confirms match.
-
-Test: erase device blocks, retrieve erased data, and confirm it is zeroed:
-
-Erasing blocks...
-Reading erased blocks...
-Data read from device (ideally zeroed):
-------------------------------------------------------------
-------------------------------------------------------------
-------------------------------------------------------------
-------------------------------------------------------------
-------------------------------------------------------------
-
-Examination confirms all-zeroes.
-
-
-tim@buttscoot: ~/Documents/V-SPELLS/TestRig/testrig-v12$ ./test_bravo_3
-BRAVO 3 DRIVER
-Test: store 300 bytes to device, retrieve them, and compare.
-
-Data to write to device:
-abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
-ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
-qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
-yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
-ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
-
-Writing data...
-Reading data...
-Data read from device (ideally identical):
-abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
-ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
-qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
-yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
-ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
-
-Comparison confirms match.
-
-Test: erase device blocks, retrieve erased data, and confirm it is zeroed:
-
-Erasing blocks...
-Reading erased blocks...
-Data read from device (ideally zeroed):
-------------------------------------------------------------
-------------------------------------------------------------
-------------------------------------------------------------
-------------------------------------------------------------
-------------------------------------------------------------
-
-Examination confirms all-zeroes.
-
-
-tim@buttscoot: ~/Documents/V-SPELLS/TestRig/testrig-v12$ ./test_bravo_4
-BRAVO 4 DRIVER
-Test: store 300 bytes to device, retrieve them, and compare.
-
-Data to write to device:
-abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
-ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
-qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
-yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
-ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
-
-Writing data...
-Reading data...
-Data read from device (ideally identical):
-abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
-ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
-qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
-yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
-ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghij----
-
-Buffers differ at index 296.
-
-tim@buttscoot: ~/Documents/V-SPELLS/TestRig/testrig-v12$ ./test_bravo_5
-BRAVO 5 DRIVER
-Test: store 300 bytes to device, retrieve them, and compare.
-
-Data to write to device:
-abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
-ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
-qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
-yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
-ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
-
-Writing data...
-^C
-[?2004h]0;tim@buttscoot: ~/Documents/V-SPELLS/TestRig/testrig-v12[01;32mtim@buttscoot[00m:[01;34m~/Documents/V-SPELLS/TestRig/testrig-v12[00m$ ./test_bravo_5[K6
-[?2004lBRAVO 6 DRIVER
-Test: store 300 bytes to device, retrieve them, and compare.
-
-Data to write to device:
-abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
-ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
-qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
-yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
-ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
-
-Writing data...
-Reading data...
-Data read from device (ideally identical):
-vutsrqponmlkjihgfedcbazyxwvutsrqponmlkjihgfedcbazyxwvutsrqpo
-nmlkjihgfedcbazyxwvutsrqponmlkjihgfedcbazyxwvutsrqponmlkjihg
-fedcbazyxwvutsrqponmlkjihgfedcbazyxwvutsrqponmlkjihgfedcbazy
-xwvutsrqponmlkjihgfedcbazyxwvutsrqponmlkjihgfedcbazyxwvutsrq
-ponmlkjihgfedcbanmlkjihgfedcbazyxwvutsrqponmlkjihgfedcbazyxw
-
-Buffers differ at index 0.
-
-tim@buttscoot: ~/Documents/V-SPELLS/TestRig/testrig-v12$ ./test_foxtrot_0
+user@host: ~/v-spells-nand-use-case$ ./test_foxtrot_0
 FOXTROT 0 DRIVER
 Test: store 300 bytes to device, retrieve them, and compare.
 
 Data to write to device:
+
 abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
 ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
 qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
 yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
 ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
-
 Writing data...
 Reading data...
 Data read from device (ideally identical):
+
 abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
 ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
 qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
 yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
 ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
 
-Comparison confirms match.
+Pass - comparison confirms match.
 
 Test: erase device blocks, retrieve erased data, and confirm it is zeroed:
 
 Erasing blocks...
 Reading erased blocks...
 Data read from device (ideally zeroed):
+
 ------------------------------------------------------------
 ------------------------------------------------------------
 ------------------------------------------------------------
 ------------------------------------------------------------
 ------------------------------------------------------------
 
-Examination confirms all-zeroes.
+Pass - examination confirms all-zeroes.
 
-
-tim@buttscoot: ~/Documents/V-SPELLS/TestRig/testrig-v12$ ./test_foxtrot_1
+user@host: ~/v-spells-nand-use-case$ ./test_foxtrot_1
 FOXTROT 1 DRIVER
 Test: store 300 bytes to device, retrieve them, and compare.
 
 Data to write to device:
+
 abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
 ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
 qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
 yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
 ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
-
 Writing data...
 Reading data...
 Data read from device (ideally identical):
+
 abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
 ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
 qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
 yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
 ghijklmnopqrstuv--------------------------------------------
 
-Buffers differ at index 256.
+Fail - buffers differ at index 256.
 
-tim@buttscoot: ~/Documents/V-SPELLS/TestRig/testrig-v12$ ./test_foxtrot_2
+user@host: ~/v-spells-nand-use-case$ ./test_foxtrot_2
 FOXTROT 2 DRIVER
 Test: store 300 bytes to device, retrieve them, and compare.
 
 Data to write to device:
+
 abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
 ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
 qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
 yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
 ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
-
 Writing data...
-^[[A ^C
+^C
 
-tim@buttscoot: ~/Documents/V-SPELLS/TestRig/testrig-v12$ ./test_kilo_0
-Test: update Device Information Base (DIB):
+user@host: ~/v-spells-nand-use-case$ ./test_kilo_0
 KILO 0 DRIVER
 Verifying: Dummy device in original DIB.
 Verifying new DIB...
 Verifying: Provatek, LLC NAND Provastore.
 Verifying: Dummy device in original DIB.
-Confirmed DIB well-formed after update.
+Pass - confirmed DIB well-formed after driver initialization.
 
 Test: store 300 bytes to device, retrieve them, and compare.
 
 Data to write to device:
+
 abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
 ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
 qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
 yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
 ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
-
 Writing data...
 Reading data...
 Data read from device (ideally identical):
+
 abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
 ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
 qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
 yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
 ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
 
-Comparison confirms match.
+Pass - comparison confirms match.
 
 Test: erase device blocks, retrieve erased data, and confirm it is zeroed:
 
 Erasing blocks...
 Reading erased blocks...
 Data read from device (ideally zeroed):
+
 ------------------------------------------------------------
 ------------------------------------------------------------
 ------------------------------------------------------------
 ------------------------------------------------------------
 ------------------------------------------------------------
 
-Examination confirms all-zeroes.
+Pass - examination confirms all-zeroes.
 
-
-tim@buttscoot: ~/Documents/V-SPELLS/TestRig/testrig-v12$ ./test_kilo_1
-Test: update Device Information Base (DIB):
+user@host: ~/v-spells-nand-use-case$ ./test_kilo_1
 KILO 1 DRIVER
 Verifying: Dummy device in original DIB.
 Verifying new DIB...
 Verifying: Provatek, LLC NAND Provastore.
-Driver failed to preserve original DIB entries.
+Fail - driver failed to preserve original DIB entries.
 
-tim@buttscoot: ~/Documents/V-SPELLS/TestRig/testrig-v12$ ./test_kilo_2
-Test: update Device Information Base (DIB):
+user@host: ~/v-spells-nand-use-case$ ./test_kilo_2
 KILO 2 DRIVER
 Verifying: Dummy device in original DIB.
 Verifying new DIB...
 Verifying: Provatek, LLC NAND Provastore.
 DIB: device has no controller chip.
-New DIB is not well-formed.
+Fail - new DIB is not well-formed.
 
-tim@buttscoot: ~/Documents/V-SPELLS/TestRig/testrig-v12$ ./test_kilo_3
-Test: update Device Information Base (DIB):
+user@host: ~/v-spells-nand-use-case$ ./test_kilo_3
 KILO 3 DRIVER
 Verifying: Dummy device in original DIB.
 Verifying new DIB...
 Verifying: Provatek, LLC NAND Provastore.
 DIB:  controller chip has no storage chips.
-New DIB is not well-formed.
+Fail - new DIB is not well-formed.
 
-tim@buttscoot: ~/Documents/V-SPELLS/TestRig/testrig-v12$ ./test_kilo_4
-Test: update Device Information Base (DIB):
-KILO 0 DRIVER
+user@host: ~/v-spells-nand-use-case$ ./test_kilo_4
+KILO 4 DRIVER
 Verifying: Dummy device in original DIB.
 Verifying new DIB...
 Verifying: Provatek, LLC NAND Provastore.
 DIB: storage chip has reference count != 1.
-New DIB is not well-formed.
+Fail - new DIB is not well-formed.
 
-tim@buttscoot: ~/Documents/V-SPELLS/TestRig/testrig-v12$ ./test_kilo_5
-Test: update Device Information Base (DIB):
-KILO 0 DRIVER
+user@host: ~/v-spells-nand-use-case$ ./test_kilo_5
+KILO 5 DRIVER
 Verifying: Dummy device in original DIB.
 Verifying new DIB...
 Verifying: Provatek, LLC NAND Provastore.
 DIB: first and last storage chip do not point to controller chip.
-New DIB is not well-formed.
+Fail - new DIB is not well-formed.
 
-Script done on 2022-08-23 12:46:51-04:00 [COMMAND_EXIT_CODE="0"]
+
