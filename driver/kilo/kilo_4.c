@@ -170,7 +170,7 @@ struct nand_device *register_nand_device(struct nand_device *old_dib)
 struct nand_device *init_nand_driver(volatile unsigned long *ioregister,
 	struct nand_device *old_dib)
 {
-	printf("KILO 0 DRIVER\n");
+	printf("KILO 4 DRIVER\n");
 	driver_ioregister = ioregister;
 	return register_nand_device(old_dib);
 }

@@ -25,17 +25,33 @@ an executable for a specific driver, run make with the target named
 for that driver, for example:</P>
 
 <PRE>
-make test_alpha_0
+      make test_alpha_0
 </PRE>
 
 <P>Researchers can extend the makefile to include similar specific
 targets for their own DSL-based driver reimplementations.</P>
 
-<P>Running a test rig executable runs the test suite for the configured
-driver.  For example:</P>
+<P>Running a test rig executable runs the test suite for the
+  configured driver.  Each executable has two modes controlled by
+  command-line options:</P>
+
+<DL>
+  <DT>--deterministic <DD> runs a short test that covers only a small
+      number of execution paths but produces the same results for
+      every run.  When run with no command line arugments, the
+      executables will choose this mode by default.
+      
+  <DT>--stochastic n <DD> runs n tests, each consisting of a series
+  of read, program (write), and erase operations.
+
+</DL>
+
+<P>For example:</P>
 
 <PRE>
       ./test_alpha_0
+      ./test_alpha_0 --deterministic
+      ./test_alpha_0 --stochastic 4
 </PRE>
 
 <P>Note that you will need to terminate the tests for drivers with

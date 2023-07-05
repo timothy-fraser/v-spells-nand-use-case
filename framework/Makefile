@@ -22,6 +22,7 @@ fw_jumptable.o : fw_jumptable.c fw_jumptable.h framework.h \
 fw_execop.o : fw_execop.c fw_execop.h framework.h \
 		$(DEVICEDIR)/device_emu.h $(DRIVERDIR)/driver.h
 	$(CC) $(CFLAGS) -c fw_execop.c
+#	$(CC) $(CFLAGS) -DDIAGNOSTICS -c fw_execop.c
 
 fw_dib.o : fw_dib.c framework.h
 	$(CC) $(CFLAGS) -c fw_dib.c

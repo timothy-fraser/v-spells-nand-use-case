@@ -28,13 +28,35 @@
  * write, or erase will continue from the beginning of storage ("wrap").
  *
  */
+#define PAGE_SIZE          NUM_BYTES
+#define BLOCK_SIZE         (NUM_PAGES * NUM_BYTES)
+#define MIRROR_SIZE        (NUM_BLOCKS * NUM_PAGES * NUM_BYTES)
 
-#define PAGE_SIZE     NUM_BYTES
-#define BLOCK_SIZE    (NUM_PAGES * NUM_BYTES)
-#define MIRROR_SIZE   (NUM_BLOCKS * NUM_PAGES * NUM_BYTES)
-#define WRAP(i)       ((i) % MIRROR_SIZE)
-#define PAGE_START(i) (((unsigned int)((i) / NUM_BYTES)) * NUM_BYTES)
-static unsigned char  mirror[MIRROR_SIZE];
+/* The following three macros return the number of the block, the
+ * number of the page within its block, and the number of the byte
+ * within its page of the offset o, respectively.
+ */
+#define BLOCK(o)        ((o) / BLOCK_SIZE)
+#define PAGE(o)         (((o) % BLOCK_SIZE) / PAGE_SIZE)
+#define BYTE(o)         ((o) % PAGE_SIZE)
+
+/* The following four macros compute the offset to the first byte or
+ * last byte in the page or block that contains offset o.
+ */
+#define PAGE_START(o)  (((o) / PAGE_SIZE) * PAGE_SIZE)
+#define PAGE_END(o)    (PAGE_START(o) + PAGE_SIZE - 1)
+#define BLOCK_START(o) (((o) / BLOCK_SIZE) * BLOCK_SIZE)
+#define BLOCK_END(o)   (BLOCK_START(o) + BLOCK_SIZE - 1)
+
+/* This module's functions accept offsets that are arbitrary unsigned
+ * ints, but the mirror itself has a relatively small size.  This
+ * macro wraps offsets to the size of the mirror.  Convention: don't
+ * wrap until you actually need to index an array or print.  Wrapping
+ * makes it hard to compare offsets with "<" and "<=".
+ */
+#define WRAP(o) ((o) % MIRROR_SIZE)
+
+static unsigned char mirror[MIRROR_SIZE];
 
 
 /* read_mirror()
@@ -51,12 +73,10 @@ static unsigned char  mirror[MIRROR_SIZE];
 void
 read_mirror(unsigned char *buffer, unsigned int offset, unsigned int size) {
 
-	unsigned int m;  /* index into mirror */
-	unsigned int b;  /* index into buffer */
-	
-	for (b = 0, m = WRAP(offset); b < size; b++, m = WRAP(m + 1)) {
-		assert(m < MIRROR_SIZE);
-		buffer[ b ] = mirror[ m ];
+	unsigned int i;  /* index into both mirror and buffer */
+
+	for (i = 0; i < size; i++) {
+		buffer[ i ] = mirror[ WRAP(offset + i) ];
 	}
 	
 } /* read_mirror() */
@@ -85,33 +105,21 @@ read_mirror(unsigned char *buffer, unsigned int offset, unsigned int size) {
 void
 write_mirror(unsigned char *buffer, unsigned int offset, unsigned int size) {
 
-	unsigned int m;  /* index into mirror */
-	unsigned int b;  /* index into buffer */
+	unsigned int i;  /* index into both mirror and buffer */
 
-	/* Zero the first page preceeding the first actual data byte.
-	 * When this loop exits, the mirror index m is set to begin
-	 * writing actual data bytes to the mirror.
-	 */
-	offset = WRAP(offset);
-	for (m = PAGE_START(offset); m < offset; m++) {
-		assert(m < MIRROR_SIZE);
-		mirror[ m ] = 0;
+	/* Zero the first page preceeding the first actual data byte. */
+	for (i = PAGE_START(offset); i < offset; i++) {
+		mirror[ WRAP(i) ] = 0;
 	}
-	
-	/* Write the actual data bytes. When this loop exits, the
-	 * mirror index m is set to begin writing zeroes to the last
-	 * page.
-	 */
-	for (b = 0; b < size; b++, m = WRAP(m + 1)) {
-		assert(m < MIRROR_SIZE);
-		mirror[ m ] = buffer[ b ];
+
+	/* Write the actual data bytes. */
+	for (i = 0; i < size; i++) {
+		mirror[ WRAP(offset + i) ] = buffer[ i ];
 	}
-	
-	
+
 	/* Zero the last page beyond the last actual data byte. */
-	for (; (m % PAGE_SIZE) != 0; m = WRAP(m + 1)) {
-		assert(m < MIRROR_SIZE);
-		mirror[ m ] = 0;
+	for (i = offset + size; i <= PAGE_END(offset + size - 1); i++) {
+		mirror[ WRAP(i) ] = 0;
 	}
 	
 } /* write_mirror() */
@@ -145,21 +153,8 @@ erase_mirror(unsigned int offset, unsigned int size) {
 
 	unsigned int m;  /* index into mirror */
 
-	/* Make offset point to the beginning of the first
-	 * block and adjust size accordingly.
-	 */
-	offset = WRAP(offset);
-	size += offset % BLOCK_SIZE;
-	offset = ((unsigned int)(offset / BLOCK_SIZE)) * BLOCK_SIZE;
-	
-	/* We've block-aligned the start of the region.  Now increase
-	 * size as needed to cover the entire last block. */
-	size += (BLOCK_SIZE - (size % BLOCK_SIZE));
-
-	/* Perform the erasure. */
-	for (m = offset; m < size; m = WRAP(m + 1)) {
-		assert(m < MIRROR_SIZE);
-		mirror[ m ] = 0;
+	for (m = BLOCK_START(offset); m <= BLOCK_END(offset + size - 1); m++) {
+		mirror[ WRAP(m) ] = 0;
 	}
 	
 } /* erase_mirror() */
@@ -185,11 +180,12 @@ erase_mirror(unsigned int offset, unsigned int size) {
 #define TEST_OFFSET (((2 * MIRROR_SIZE) - BLOCK_SIZE) + PAGE_SIZE + 7)
 #define NONZERO_CHAR 'x'   /* a byte value data_print() will print */
 
-int
-main(int argv, char *argc[]) {
+static unsigned char data_written[ MIRROR_SIZE ];
+static unsigned char data_read[ MIRROR_SIZE ];
 
-	unsigned char data_written[ TEST_SIZE ];
-	unsigned char data_read[ TEST_SIZE ];
+static int
+test(unsigned int offset, unsigned int size) {
+
 	unsigned int i;
 	unsigned int true_start;  /* index of start of first page touched */
 	unsigned int true_end;    /* index of end of last page touched */
@@ -201,93 +197,101 @@ main(int argv, char *argc[]) {
 		mirror[ i ] = NONZERO_CHAR;
 	}
 
-	true_start = ((unsigned int)(WRAP(TEST_OFFSET) / PAGE_SIZE))
-		* PAGE_SIZE;
-	true_end = ((((unsigned int)(WRAP(TEST_OFFSET + TEST_SIZE)
-		/ PAGE_SIZE)) + 1) * PAGE_SIZE) - 1;
+	true_start = PAGE_START(offset);
+	true_end = PAGE_END(offset + size - 1);
 	
-	printf("Test: store and retrieve %u bytes to mirror index 0x%08x,\n"
-	       "      true start index 0x%08x block %u page %u offset %u,\n"
-	       "        true end index 0x%08x block %u page %u offset %u.\n\n",
-	       TEST_SIZE, TEST_OFFSET,
-	       true_start, (true_start / BLOCK_SIZE),
-	       ((true_start % BLOCK_SIZE) / PAGE_SIZE),
-	       (true_start % PAGE_SIZE),
-	       true_end, (true_end / BLOCK_SIZE),
-	       ((true_end % BLOCK_SIZE) / PAGE_SIZE),
-	       (true_end % PAGE_SIZE));
+	printf("Test: store and retrieve 0x%06x bytes "
+	       "to mirror index 0x%08x,\n"
+	       "      true start index 0x%08x "
+	       "block %03u page %03u offset %03u,\n"
+	       "        true end index 0x%08x "
+	       "block %03u page %03u offset %03u.\n",
+	       size, offset,
+	       true_start,
+	       BLOCK(WRAP(true_start)), PAGE(true_start), BYTE(true_start),
+	       true_end,
+	       BLOCK(WRAP(true_end)), PAGE(true_end), BYTE(true_end));
 	
-	puts("Writing data...");
-	data_init(data_written, TEST_SIZE);
-	data_print(data_written, TEST_SIZE);
-	write_mirror(data_written, TEST_OFFSET, TEST_SIZE);
+	puts("      Writing data...");
+	data_init(data_written, size);
+	write_mirror(data_written, offset, size);
 	
-	puts("\nReading data (ideally, identical)...");
-	read_mirror(data_read, TEST_OFFSET, TEST_SIZE);
-	data_print(data_read, TEST_SIZE);
+	puts("      Reading data (ideally, identical)...");
+	read_mirror(data_read, offset, size);
 
-	if (TEST_SIZE != (i = data_compare(data_written, data_read,
-		TEST_SIZE))) {
-		printf("\nFail - buffers differ at index 0x%08x.\n", i);
+	if (size != (i = data_compare(data_written, data_read, size))) {
+		printf("      Fail - buffers differ at index 0x%06x.\n", i);
+		printf("written: 0x%02x%02x%02x%02x\n", data_written[0],
+			data_written[1], data_written[2], data_written[3]);
+		printf(" mirror: 0x%02x%02x%02x%02x\n", mirror[0], mirror[1],
+			mirror[2], mirror[3]);
+		printf("   read: 0x%02x%02x%02x%02x\n", data_read[0],
+			data_read[1], data_read[2], data_read[3]);
 		return -1;
 	}
 	
 	/* confirm prefix of first page zeroed. */
-	for (i = true_start; i < WRAP(TEST_OFFSET); i++) {
+	for (i = true_start; i < offset; i++) {
 
-		assert(i < MIRROR_SIZE);
-		if (mirror[ i ] != 0) {
-			printf("\nFail - nonzero prefix data at index "
+		if (mirror[ WRAP(i) ] != 0) {
+			printf("      Fail - nonzero prefix data at index "
 				"0x%08x.\n", i);
 			return -1;
 		}
 	}
 	
 	/* confirm postfix of last page zeroed. */
-	for (i = WRAP(TEST_OFFSET + TEST_SIZE);
-		i <= true_end; i++) {
+	for (i = offset + size; i <= true_end; i++) {
 
-		assert(i < MIRROR_SIZE);
-		if (mirror[ i ] != 0) {
-			printf("\nFail - nonzero postfix data at index "
+		if (mirror[ WRAP(i) ] != 0) {
+			printf("      Fail - nonzero postfix data at index "
 				"0x%08x.\n", i);
 			return -1;
 		}
 	}
-	puts("Pass - confirmed data read matched data written,\n"
-	     "prefix of first page zeroed, and\n"
+	puts("      Pass - confirmed data read matched data written,\n"
+	     "             prefix of first page zeroed, and "
 	     "postfix of last page zeroed.\n");
+
+	true_start = BLOCK_START(offset);
+	true_end   = BLOCK_END(offset + size - 1);
 	
-	true_start = ((unsigned int)(WRAP(TEST_OFFSET) / BLOCK_SIZE))
-		* BLOCK_SIZE;
-	true_end = ((((unsigned int)(WRAP(TEST_OFFSET + TEST_SIZE)
-		/ BLOCK_SIZE)) + 1) * BLOCK_SIZE) - 1;
+	printf("Test: erase a range of 0x%06x bytes "
+	       "starting at index 0x%08x,\n"
+	       "      true start index 0x%08x "
+	       "block %03u page %03u offset %03u,\n"
+	       "        true end index 0x%08x "
+	       "block %03u page %03u offset %03u.\n",
+	       size, offset,
+	       true_start,
+	       BLOCK(WRAP(true_start)), PAGE(true_start), BYTE(true_start),
+	       true_end,
+	       BLOCK(WRAP(true_end)), PAGE(true_end), BYTE(true_end));
 	
-	printf("Test: erase a range of %u bytes starting at index 0x%08x,\n"
-	       "      true start index 0x%08x block %u page %u offset %u,\n"
-	       "        true end index 0x%08x block %u page %u offset %u.\n\n",
-	       TEST_SIZE, TEST_OFFSET,
-	       true_start, (true_start / BLOCK_SIZE),
-	       ((true_start % BLOCK_SIZE) / PAGE_SIZE),
-	       (true_start % PAGE_SIZE),
-	       true_end, (true_end / BLOCK_SIZE),
-	       ((true_end % BLOCK_SIZE) / PAGE_SIZE),
-	       (true_end % PAGE_SIZE));
-	
-	erase_mirror(TEST_OFFSET, TEST_SIZE);
+	erase_mirror(offset, size);
 
 	/* confirm entire range of complete blocks zeroed. */
 	for (i = true_start; i <= true_end; i++) {
 
-		assert(WRAP(i) < MIRROR_SIZE);
 		if (mirror[ WRAP(i) ] != 0) {
-			printf("Fail - nonzero erased data at index "
+			printf("      Fail - nonzero erased data at index "
 				"0x%08x.\n", i);
 			return -1;
 		}
 	}
 
-	puts("Pass - confirmed entire range of complete blocks zeroed.\n");
+	puts("      Pass - confirmed entire range of complete blocks "
+	     "zeroed.\n");
+	return 0;
+
+} /* test() */
+
+
+int
+main(int argv, char *argc[]) {
+
+	if (test(TEST_OFFSET, TEST_SIZE)) return -1;
+	if (test(0, MIRROR_SIZE)) return -1;
 	return 0;
 	
 } /* main() */

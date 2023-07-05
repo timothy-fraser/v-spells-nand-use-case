@@ -4,12 +4,25 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#ifdef DIAGNOSTICS
+#include <stdio.h>
+#endif
+
 #include "device_emu.h"
 #include "driver.h"
 #include "framework.h"
 #include "fw_execop.h"
 
-extern struct nand_driver driver;    /* from framework.c */
+#define PAGE_SIZE  NUM_BYTES
+#define BLOCK_SIZE (NUM_PAGES * PAGE_SIZE) /* device block size in bytes */
+
+/* The following three macros return the number of the block, the
+ * number of the page within its block, and the number of the byte
+ * within its page of the offset o, respectively.
+ */
+#define BLOCK(o)        ((o) / BLOCK_SIZE)
+#define PAGE(o)         (((o) % BLOCK_SIZE) / PAGE_SIZE)
+#define BYTE(o)         ((o) % PAGE_SIZE)
 
 /* These constants indicate how many NAND instructions are needed in
  * an operation for each page read or programmed and for each block
@@ -18,6 +31,8 @@ extern struct nand_driver driver;    /* from framework.c */
 
 #define DATA_XFER_INSTRUCTIONS 3     /* xfer, execute, wait */
 #define ERASE_INSTRUCTIONS     2     /* execute, wait */
+
+extern struct nand_driver driver;    /* from framework.c */
 
 
 /* instruction_count_data_xfer()
@@ -64,8 +79,7 @@ instruction_count_data_xfer(unsigned int byte_addr,
 
 /* instruction_count_erase()
  *
- * in:     start_block_addr - number of first block to erase
- *         end_block_addr   - number of last block to erase
+ * in:     num_blocks  - number of blocks to erase
  * out:    nothing
  * return: number of NAND instructions needed
  *
@@ -75,21 +89,83 @@ instruction_count_data_xfer(unsigned int byte_addr,
  */
 
 static unsigned int
-instruction_count_erase(unsigned int start_block_addr,
-			unsigned int end_block_addr) {
+instruction_count_erase(unsigned int num_blocks) {
 
 	unsigned int count = 0; /* the instruction count accumulates here */
 
 	count++;    /* erase setup instruction */
 	count++;    /* address instruction */
 
-	count += ERASE_INSTRUCTIONS * ((end_block_addr - start_block_addr)
-		+ 1);
+	count += ERASE_INSTRUCTIONS * num_blocks;
 	
 	return count;
 
 } /* instruction_count_erase() */
 
+
+#ifdef DIAGNOSTICS
+
+static void
+print_operation(struct nand_operation *op) {
+
+	unsigned int i;                /* counts instructions in operation */
+	struct nand_op_instr *p_instr; /* points to each instruction */
+	
+	printf("Operation (%u): ", op->ninstrs);
+	
+	for (i = 0; i < op->ninstrs; i++) {
+		p_instr = &(op->instrs[ i ]);
+		switch (p_instr->type) {
+			
+		case NAND_OP_CMD_INSTR:
+			printf("CMD 0x%02x ", p_instr->ctx.cmd.opcode);
+			break;
+
+		case NAND_OP_ADDR_INSTR:
+			switch (p_instr->ctx.addr.naddrs) {
+			case NAND_INSTR_NUM_ADDR_IO:
+				printf("XADDR 0x%02x%02x%02x ",
+					p_instr->ctx.addr.addrs[
+					NAND_INSTR_BLOCK ],
+					p_instr->ctx.addr.addrs[
+					NAND_INSTR_PAGE ],
+					p_instr->ctx.addr.addrs[
+					NAND_INSTR_BYTE ]);
+				break;
+			case NAND_INSTR_NUM_ADDR_ERASE:
+				printf("EADDR 0x%02x ",
+					p_instr->ctx.addr.addrs[
+					NAND_INSTR_BLOCK ]);
+				break;
+			default:
+				assert(0);  /* bad number of addrs */
+			}
+			break;
+
+		case NAND_OP_DATA_IN_INSTR:
+			printf("DIN(W) 0x%02x ", p_instr->ctx.data_in.len);
+			break;
+			
+		case NAND_OP_DATA_OUT_INSTR:
+			printf("DOUT(R) 0x%02x ", p_instr->ctx.data_out.len);
+			break;
+
+		case NAND_OP_WAITRDY_INSTR:
+			printf("WAIT %u ", p_instr->ctx.waitrdy.timeout_ms);
+			break;
+
+		default:
+			assert(0);  /* bad instruction type */
+
+		} /* switch on instruction type */
+		
+	} /* for all instructions in operation */
+
+	printf("\n");
+	
+} /* print_operation() */
+
+#endif
 	
 /* exec_write()
  *
@@ -110,70 +186,91 @@ instruction_count_erase(unsigned int start_block_addr,
 int
 exec_write(const unsigned char* buffer, unsigned int offset,
 	unsigned int size) {
+
+	struct nand_operation operation; /* the NAND operation to send */
+	unsigned int i = 0;              /* counts instructions in operation */
+	unsigned int cursor = 0;         /* index into buffer parm */
+	unsigned int size_remaining;     /* bytes left to transfer */
+	unsigned int available;          /* space available in current page */
+	unsigned int size_this_page;     /* bytes xferred in current page */
+	int ret_val = 0;                 /* optimistically presume success */
+
+#ifdef DIAGNOSTICS
+	printf("Framework exec_write() start addr 0x%08x "
+		"size 0x%08x instruction count 0x%08x.\n",
+	       offset, size, instruction_count_data_xfer(BYTE(offset), size));
+#endif 
 	
-	unsigned int bytes_left = size;
-	unsigned int cursor = 0;
-
-	unsigned char block_addr = offset / (NUM_PAGES * NUM_BYTES);
-	offset %= (NUM_PAGES * NUM_BYTES);
-	unsigned char page_addr = offset / NUM_BYTES;
-	unsigned char byte_addr = offset % NUM_BYTES;
-
-	unsigned int size_to_write;
-
-	struct nand_operation operation;
-
-	int ret_val = 0;    /* optimistically presume success */
-
-	operation.instrs = malloc(instruction_count_data_xfer(byte_addr,
+	operation.instrs = malloc(instruction_count_data_xfer(BYTE(offset),
 		size) * sizeof(struct nand_op_instr));
 	assert(operation.instrs != NULL);
 
-	int i = 0;
-	operation.ninstrs = 2; // SETUP + ADDR INSTRUCTION
-	
+	/* Begin with a C_PROGRAM_SETUP. */
 	operation.instrs[i].type = NAND_OP_CMD_INSTR;
-	operation.instrs[i++].ctx.cmd.opcode = C_PROGRAM_SETUP;
-
-	operation.instrs[i].type = NAND_OP_ADDR_INSTR;
-	operation.instrs[i].ctx.addr.naddrs = NAND_INSTR_NUM_ADDR_IO;
-	operation.instrs[i].ctx.addr.addrs[ NAND_INSTR_BLOCK ] = block_addr;
-	operation.instrs[i].ctx.addr.addrs[ NAND_INSTR_PAGE ]  = page_addr;
-	operation.instrs[i].ctx.addr.addrs[ NAND_INSTR_BYTE ]  = byte_addr;
+	operation.instrs[i].ctx.cmd.opcode = C_PROGRAM_SETUP;
 	i++;
 
-	do {
-		size_to_write = NUM_BYTES;
-		if (offset != 0) {
-			size_to_write = NUM_BYTES - offset;
-			offset = 0;
-		}
-		if (bytes_left < NUM_BYTES &&
-			bytes_left < size_to_write) {
-			size_to_write = bytes_left;
-		}
+	/* Then specify the address. */
+	operation.instrs[i].type = NAND_OP_ADDR_INSTR;
+	operation.instrs[i].ctx.addr.naddrs = NAND_INSTR_NUM_ADDR_IO;
+	operation.instrs[i].ctx.addr.addrs[ NAND_INSTR_BLOCK ] = BLOCK(offset);
+	operation.instrs[i].ctx.addr.addrs[ NAND_INSTR_PAGE ]  = PAGE(offset);
+	operation.instrs[i].ctx.addr.addrs[ NAND_INSTR_BYTE ]  = BYTE(offset);
+	i++;
 
-		operation.ninstrs++;
+	/* The driver expects to transfer the data one page at a time.
+	 * The first page is special: the data must begin at
+	 * BYTE(offset), and if BYTE(offset) is not 0 (that is, if the
+	 * beginning of the transfer is not page-aligned) the first
+	 * page won't be able to hold a full PAGE_SIZE of bytes.  All
+	 * subsequent pages will be able to hold up to PAGE_SIZE
+	 * bytes.  Use 'available' to manage this first
+	 * page/subsequent pages capacity logic. Add a transfer,
+	 * execute, waitrdy trio for each page to the operation.
+	 */
+	size_remaining = size;
+	available = PAGE_SIZE - BYTE(offset);  /* First page capacity. */
+	while (size_remaining > 0) {
+
+		/* Add a data-in aka write aka program
+		 * instruction. Give each of these instructions a
+		 * pointer into the buffer parm to indicate the data
+		 * to write.  Use cursor to indicate the start of this
+		 * portion of the buffer parm.
+		 */
+		size_this_page = (size_remaining < available ?
+			size_remaining : available);
 		operation.instrs[i].type = NAND_OP_DATA_IN_INSTR;
-		operation.instrs[i].ctx.data_in.len = size_to_write;
-		operation.instrs[i++].ctx.data_in.buf = &buffer[cursor];
-
-		operation.ninstrs++;
+		operation.instrs[i].ctx.data_in.len = size_this_page;
+		operation.instrs[i].ctx.data_in.buf = &buffer[cursor];
+		i++;
+		
+		/* Add a C_PROGRAM_EXECUTE command. */
 		operation.instrs[i].type = NAND_OP_CMD_INSTR;
-		operation.instrs[i++].ctx.cmd.opcode = C_PROGRAM_EXECUTE;
-
-		operation.ninstrs++;
+		operation.instrs[i].ctx.cmd.opcode = C_PROGRAM_EXECUTE;
+		i++;
+		
+		/* Add a waitrdy instruction. */
 		operation.instrs[i].type = NAND_OP_WAITRDY_INSTR;
-		operation.instrs[i++].ctx.waitrdy.timeout_ms =
+		operation.instrs[i].ctx.waitrdy.timeout_ms =
 			TIMEOUT_WRITE_PAGE_US;
+		i++;
+		
+		size_remaining -= size_this_page;
+		cursor += size_this_page;
+		assert(cursor + size_remaining == size);
+		available = PAGE_SIZE;      /* Subsequent page capacity. */
+		
+	} /* while bytes remain to transfer */
 
-		cursor += size_to_write;
-		bytes_left -= size_to_write;
-
-	} while(bytes_left > 0);
-
-	assert(operation.ninstrs == instruction_count_data_xfer(byte_addr,
+	operation.ninstrs = i;  /* record how many instructions we added */
+	
+	assert(operation.ninstrs == instruction_count_data_xfer(BYTE(offset),
 		size));
+
+#ifdef DIAGNOSTICS
+	print_operation(&operation);
+#endif
 	
 	if (driver.operation.exec_op(&operation)) {
 		ret_val = -1;  /* timeout */
@@ -181,7 +278,8 @@ exec_write(const unsigned char* buffer, unsigned int offset,
 
 	free(operation.instrs);
 	return ret_val;
-}
+
+} /* exec_write() */
 
 
 /* exec_read()
@@ -201,76 +299,100 @@ exec_write(const unsigned char* buffer, unsigned int offset,
 
 int
 exec_read(unsigned char* buffer, unsigned int offset, unsigned int size) {
+
+	struct nand_operation operation; /* the NAND operation to send */
+	unsigned int i = 0;              /* counts instructions in operation */
+	unsigned int cursor = 0;         /* index into buffer parm */
+	unsigned int size_remaining;     /* bytes left to transfer */
+	unsigned int available;          /* space available in current page */
+	unsigned int size_this_page;     /* bytes xferred in current page */
+	int ret_val = 0;                 /* optimistically presume success */
+
+#ifdef DIAGNOSTICS
+	printf("Framework exec_read() start addr 0x%08x "
+		"size 0x%08x instruction count 0x%08x.\n",
+	       offset, size, instruction_count_data_xfer(BYTE(offset), size));
+#endif 
 	
-	unsigned int bytes_left = size;
-	unsigned int cursor = 0;
-
-	unsigned char block_addr = offset / (NUM_PAGES * NUM_BYTES);
-	offset %= (NUM_PAGES * NUM_BYTES);
-	unsigned char page_addr = offset / NUM_BYTES;
-	unsigned char byte_addr = offset % NUM_BYTES;
-	
-	unsigned int size_to_read;
-
-	struct nand_operation operation;
-
-	int ret_val = 0;    /* optimistically presume success */
-
-	operation.instrs = malloc(instruction_count_data_xfer(byte_addr,
+	operation.instrs = malloc(instruction_count_data_xfer(BYTE(offset),
 		size) * sizeof(struct nand_op_instr));
 	assert(operation.instrs != NULL);
-	
-	int i = 0;
-	operation.ninstrs = 2; // SETUP + ADDR INSTRUCTION
 
+	/* Begin with a C_READ_SETUP. */
 	operation.instrs[i].type = NAND_OP_CMD_INSTR;
-	operation.instrs[i++].ctx.cmd.opcode = C_READ_SETUP;
-
-	operation.instrs[i].type = NAND_OP_ADDR_INSTR;
-	operation.instrs[i].ctx.addr.naddrs = NAND_INSTR_NUM_ADDR_IO;
-	operation.instrs[i].ctx.addr.addrs[ NAND_INSTR_BLOCK ] = block_addr;
-	operation.instrs[i].ctx.addr.addrs[ NAND_INSTR_PAGE ]  = page_addr;
-	operation.instrs[i].ctx.addr.addrs[ NAND_INSTR_BYTE ]  = byte_addr;
+	operation.instrs[i].ctx.cmd.opcode = C_READ_SETUP;
 	i++;
 
-	do {
-		operation.ninstrs++;
+	/* Then specify the address. */
+	operation.instrs[i].type = NAND_OP_ADDR_INSTR;
+	operation.instrs[i].ctx.addr.naddrs = NAND_INSTR_NUM_ADDR_IO;
+	operation.instrs[i].ctx.addr.addrs[ NAND_INSTR_BLOCK ] = BLOCK(offset);
+	operation.instrs[i].ctx.addr.addrs[ NAND_INSTR_PAGE ]  = PAGE(offset);
+	operation.instrs[i].ctx.addr.addrs[ NAND_INSTR_BYTE ]  = BYTE(offset);
+	i++;
+
+	/* The driver expects to transfer the data one page at a time.
+	 * The first page is special: the data must begin at
+	 * BYTE(offset), and if BYTE(offset) is not 0 (that is, if the
+	 * beginning of the transfer is not page-aligned) the first
+	 * page won't be able to hold a full PAGE_SIZE of bytes.  All
+	 * subsequent pages will be able to hold up to PAGE_SIZE
+	 * bytes.  Use 'available' to manage this first
+	 * page/subsequent pages capacity logic. Add a transfer,
+	 * execute, waitrdy trio for each page to the operation.
+	 */
+	size_remaining = size;
+	available = PAGE_SIZE - BYTE(offset);  /* First page capacity. */
+	while (size_remaining > 0) {
+
+		/* Add a C_READ_EXECUTE command. */
 		operation.instrs[i].type = NAND_OP_CMD_INSTR;
-		operation.instrs[i++].ctx.cmd.opcode = C_READ_EXECUTE;
-
-		operation.ninstrs++;
+		operation.instrs[i].ctx.cmd.opcode = C_READ_EXECUTE;
+		i++;
+		
+		/* Add a waitrdy instruction. */
 		operation.instrs[i].type = NAND_OP_WAITRDY_INSTR;
-		operation.instrs[i++].ctx.waitrdy.timeout_ms =
+		operation.instrs[i].ctx.waitrdy.timeout_ms =
 			TIMEOUT_READ_PAGE_US;
-	
-		size_to_read = NUM_BYTES;
-		if (offset != 0) {
-			size_to_read = NUM_BYTES - offset;
-			offset = 0;
-		}
-		if (bytes_left < NUM_BYTES && bytes_left < size_to_read) {
-			size_to_read = bytes_left;
-		}
+		i++;
 
-		operation.ninstrs++;
+		/* Add a data-out aka read instruction. Give each of
+		 * these instructions a pointer into the buffer parm
+		 * to indicate where to put the data.  Use cursor to
+		 * indicate the start of this portion of the buffer
+		 * parm.
+		 */
+		size_this_page = (size_remaining < available ?
+			size_remaining : available);
 		operation.instrs[i].type = NAND_OP_DATA_OUT_INSTR;
-		operation.instrs[i].ctx.data_out.len = size_to_read;
-		operation.instrs[i++].ctx.data_out.buf = &buffer[cursor];
+		operation.instrs[i].ctx.data_in.len = size_this_page;
+		operation.instrs[i].ctx.data_in.buf = &buffer[cursor];
+		i++;
+		
+		size_remaining -= size_this_page;
+		cursor += size_this_page;
+		assert(cursor + size_remaining == size);
+		available = PAGE_SIZE;      /* Subsequent page capacity. */
+		
+	} /* while bytes remain to transfer */
 
-		cursor += size_to_read;
-		bytes_left -= size_to_read;
-
-	} while(bytes_left > 0);
-
-	assert(operation.ninstrs == instruction_count_data_xfer(byte_addr,
-		size));
+	operation.ninstrs = i;  /* record how many instructions we added */
 	
-	if (driver.operation.exec_op(&operation))
+	assert(operation.ninstrs == instruction_count_data_xfer(BYTE(offset),
+		size));
+
+#ifdef DIAGNOSTICS
+	print_operation(&operation);
+#endif
+	
+	if (driver.operation.exec_op(&operation)) {
 		ret_val = -1;  /* timeout */
+	}
 
 	free(operation.instrs);
 	return ret_val;
-}
+	
+} /* exec_read() */
 
 
 /* exec_erase()
@@ -303,25 +425,34 @@ exec_read(unsigned char* buffer, unsigned int offset, unsigned int size) {
 int
 exec_erase(unsigned int offset, unsigned int size) {
 	
-	/* Calculate the start and end block number of the contiguous
-	 * region to erase.  Round down for the start and round up for
-	 * the end to ensure we ask the driver to erase complete
-	 * blocks.
+	struct nand_operation operation; /* the NAND operation to send */
+	unsigned char start_block;  /* block number of first block to erase */
+	unsigned int num_blocks;    /* number of complete blocks to erase */
+	int i = 0;                  /* counts instructions */
+	unsigned int b;             /* counts blocks */
+	int ret_val = 0;            /* optimistically presume success */
+	
+	/* The offset and size input parms describe the region to
+	 * erase in terms of bytes.  Describe it in terms of blocks,
+	 * instead.  Note that we erase complete blocks, so we'll have
+	 * to enlarge the region to erase if offset isn't the start of
+	 * a block or if size isn't a multiple of the block size.
 	 */
-	unsigned char start_block_addr = offset /
-		(NUM_PAGES * NUM_BYTES);
-	unsigned char end_block_addr = ((offset + size) / 
-		(NUM_PAGES * NUM_BYTES)) + 0.5;
+	start_block = offset / BLOCK_SIZE;
+	size += offset % BLOCK_SIZE;  /* part of block ahead of region start */
+	num_blocks  = size / BLOCK_SIZE;
+	if (size % BLOCK_SIZE) num_blocks++;  /* Round up for partial blocks */
 
-	struct nand_operation operation;
+#ifdef DIAGNOSTICS
+	printf("Framework exec_erase() start block 0x%02x "
+		"num blocks 0x%02x instruction count 0x%08x.\n",
+		start_block, num_blocks, instruction_count_erase(num_blocks));
+#endif 
 
-	int ret_val = 0;    /* optimistically presume success */
-
-	operation.instrs = malloc(instruction_count_erase(start_block_addr,
-		end_block_addr) * sizeof(struct nand_op_instr));
+	operation.instrs = malloc(instruction_count_erase(num_blocks)
+		* sizeof(struct nand_op_instr));
 	assert(operation.instrs != NULL);
 	
-	int i = 0;
 	operation.ninstrs = 2; // SETUP + ADDR INSTRUCTION
 
 	operation.instrs[i].type = NAND_OP_CMD_INSTR;
@@ -330,10 +461,10 @@ exec_erase(unsigned int offset, unsigned int size) {
 	operation.instrs[i].type = NAND_OP_ADDR_INSTR;
 	operation.instrs[i].ctx.addr.naddrs = NAND_INSTR_NUM_ADDR_ERASE;
 	operation.instrs[i].ctx.addr.addrs[ NAND_INSTR_BLOCK ] =
-		start_block_addr;
+		start_block;
 	i++;
 
-	for (int j = start_block_addr; j <= end_block_addr; j++) {
+	for (b = 0; b < num_blocks; b++) {
 		operation.ninstrs++;
 		operation.instrs[i].type = NAND_OP_CMD_INSTR;
 		operation.instrs[i++].ctx.cmd.opcode = C_ERASE_EXECUTE;
@@ -344,8 +475,11 @@ exec_erase(unsigned int offset, unsigned int size) {
 			TIMEOUT_ERASE_BLOCK_US;
 	}
 
-	assert(operation.ninstrs == instruction_count_erase(start_block_addr,
-		end_block_addr));
+	assert(operation.ninstrs == instruction_count_erase(num_blocks));
+
+#ifdef DIAGNOSTICS
+	print_operation(&operation);
+#endif
 	
 	if (driver.operation.exec_op(&operation))
 		ret_val = -1;  /* timeout */

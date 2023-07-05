@@ -4,7 +4,7 @@
 
 #include "st_data.h"
 
-#define COLUMNS 64  /* print data in rows that are this wide */
+#define COLUMNS 60  /* print data in rows that are this wide */
 
 /* Macros for determining if a number corresponds to a character we
  * think is printable and for mapping numbers to printable characters.

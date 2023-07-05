@@ -1,0 +1,29 @@
+
+SUBJECT:
+
+device/de_ioregs.c
+device/de_device.c
+
+OBSERVED:
+
+Out of bounds array reference in buggy framework/fw_execop.c causes
+segfault.  Device emulator complains that it got a bad command from
+the driver and moves to its bug state.
+
+EXPECTED:
+
+Program reports segmentation violation and terminates.
+
+
+ANALYSIS:
+
+de_device.c handles signals in order to respond to activations of the
+CPU watchpoint de_ioregs.c places on our emulated command register.
+Unfortunately, this signal handler also responds to the signal the
+test/framework/driver child process sends when it commits a
+segmentation violation.  The de_device.c signal handler doesn't
+attempt to distinguish segfault signals from watchpoint signals, and
+incorrectly reports the segfault signal as some kind of driver-device
+protocol error.  This error report is extremely unhelpful, because it
+points the developer in the wrong direction.
+

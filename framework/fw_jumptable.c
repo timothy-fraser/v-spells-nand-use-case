@@ -11,6 +11,8 @@
 
 extern struct nand_driver driver;  /* from framework.c */
 
+#define BLOCK_SIZE  (NUM_PAGES * NUM_BYTES) /* device block size in bytes */
+
 
 /* jt_write()
  *
@@ -31,17 +33,12 @@ extern struct nand_driver driver;  /* from framework.c */
 int
 jt_write(unsigned char *buffer, unsigned int offset, unsigned int size) {
 	
-	unsigned int bytes_per_page = NUM_BYTES;
-	unsigned int pages_per_block = NUM_PAGES;
-	unsigned int blocks_per_chip = NUM_BLOCKS;
-
 	unsigned int bytes_left = size;
 	unsigned int cursor = 0;
 
-	unsigned char byte_addr = offset % bytes_per_page;
-	unsigned char page_addr = offset / pages_per_block;
-	unsigned char block_addr = offset /
-		(pages_per_block * blocks_per_chip);
+	unsigned char byte_addr = offset % NUM_BYTES;
+	unsigned char page_addr = offset / NUM_PAGES;
+	unsigned char block_addr = offset / BLOCK_SIZE;
 
 	unsigned int size_to_write;
 
@@ -52,12 +49,12 @@ jt_write(unsigned char *buffer, unsigned int offset, unsigned int size) {
 	driver.operation.jump_table.set_register(IOREG_ADDRESS, byte_addr);
 
 	while (bytes_left) {
-		size_to_write = bytes_per_page;
+		size_to_write = NUM_BYTES;
 		if (byte_addr != 0) {
-			size_to_write = bytes_per_page - byte_addr;
+			size_to_write = NUM_BYTES - byte_addr;
 			byte_addr = 0;
 		}
-		if (bytes_left < bytes_per_page &&
+		if (bytes_left < NUM_BYTES &&
 			bytes_left < size_to_write) {
 			size_to_write = bytes_left;
 		}
@@ -101,17 +98,12 @@ jt_write(unsigned char *buffer, unsigned int offset, unsigned int size) {
 int
 jt_read(unsigned char *buffer, unsigned int offset, unsigned int size) {
 	
-	unsigned int bytes_per_page = NUM_BYTES;
-	unsigned int pages_per_block = NUM_PAGES;
-	unsigned int blocks_per_chip = NUM_BLOCKS;
-
 	unsigned int bytes_left = size;
 	unsigned int cursor = 0;
 
-	unsigned char byte_addr = offset % bytes_per_page;
-	unsigned char page_addr = offset / pages_per_block;
-	unsigned char block_addr = offset / (pages_per_block *
-		blocks_per_chip);
+	unsigned char byte_addr = offset % NUM_BYTES;
+	unsigned char page_addr = offset / NUM_PAGES;
+	unsigned char block_addr = offset / BLOCK_SIZE;
 
 	unsigned int size_to_read;
 
@@ -127,12 +119,12 @@ jt_read(unsigned char *buffer, unsigned int offset, unsigned int size) {
 			TIMEOUT_READ_PAGE_US))
 			return -1;  /* timeout */
 			
-		size_to_read = bytes_per_page;
+		size_to_read = NUM_BYTES;
 		if (byte_addr != 0) {
-			size_to_read = bytes_per_page - byte_addr;
+			size_to_read = NUM_BYTES - byte_addr;
 			byte_addr = 0;
 		}
-		if (bytes_left < bytes_per_page && bytes_left < size_to_read) {
+		if (bytes_left < NUM_BYTES && bytes_left < size_to_read) {
 			size_to_read = bytes_left;
 		}
 
@@ -182,21 +174,31 @@ jt_read(unsigned char *buffer, unsigned int offset, unsigned int size) {
 int
 jt_erase(unsigned int offset, unsigned int size) {
 
-	/* Calculate the start and end block number of the contiguous
-	 * region to erase.  Round down for the start and round up for
-	 * the end to ensure we ask the driver to erase complete
-	 * blocks.
+	unsigned char start_block;  /* block number of first block to erase */
+	unsigned int num_blocks;    /* number of complete blocks to erase */
+	unsigned int b;             /* counts blocks as we erase them */
+	
+	/* The offset and size input parms describe the region to
+	 * erase in terms of bytes.  Describe it in terms of blocks,
+	 * instead.  Note that we erase complete blocks, so we'll have
+	 * to enlarge the region to erase if offset isn't the start of
+	 * a block or if size isn't a multiple of the block size.
 	 */
-	unsigned char start_block_addr = offset /
-		(NUM_PAGES * NUM_BYTES);
-	unsigned char end_block_addr = ((offset + size) / 
-		(NUM_PAGES * NUM_BYTES)) + 0.5;
+	start_block = offset / BLOCK_SIZE;
+	size += offset % BLOCK_SIZE;  /* part of block ahead of region start */
+	num_blocks  = size / BLOCK_SIZE;
+	if (size % BLOCK_SIZE) num_blocks++;  /* Round up for partial blocks */
+
+#ifdef DIAGNOSTICS
+	printf("Framework jt_erase() start block 0x%02x num blocks 0x%02x.\n",
+		start_block, num_blocks);
+#endif 
 
 	driver.operation.jump_table.set_register(IOREG_COMMAND, 
 		C_ERASE_SETUP);
 	driver.operation.jump_table.set_register(IOREG_ADDRESS, 
-		start_block_addr);
-	for (int i = start_block_addr; i <= end_block_addr; i++) {
+		start_block);
+	for (b = 0; b < num_blocks; b++) {
 		driver.operation.jump_table.set_register(IOREG_COMMAND, 
 			C_ERASE_EXECUTE);
 		if (driver.operation.jump_table.wait_ready(
