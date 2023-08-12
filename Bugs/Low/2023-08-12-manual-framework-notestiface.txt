@@ -1,0 +1,40 @@
+
+SUBJECT
+
+  manual/framework.html
+
+OBSERVED
+
+  The manual describes two styles of framework-driver interface in
+  terms of their syntax and semantics.
+
+EXPECTED
+
+  In addition to the above description of the two styles of
+  framework-driver interface, the manual ought to also describe the
+  tester-framework interface.
+
+ANALYSIS
+
+  The V16 version of the manual presumed that researchers working
+  with the NAND use case would care only about the drivers, and so it
+  focused mainly on the details of the framework-driver and
+  driver-device emulator interfaces.  Since the V16 release several
+  V-SPELLS teams have run experiments on the NAND use case that
+  focused on other parts of the test rig.  Improving the documentation
+  on other parts of the test rig might be useful, and documenting the
+  tester-framework interface might be a good first step since the
+  differences in its page-boundary semantics and those of the
+  framework-driver interface are potentially confusing.  In fact, bug
+  2023-08-12-pageboundary documents an example of such confusion in
+  the manual itself.
+
+  The use case's mission is to represent the interesting bits of
+  *part* of the Linux kernel's raw NAND framework, and those parts are
+  essentially the device drivers and their framework-driver and
+  driver-device interfaces.  By design, the other parts of the test
+  rig don't really resemble the Linux kernel.  If we expand the
+  documentation, we need to make the distinction between the parts
+  that are meant to be realistic and those that aren't clear.
+  
+

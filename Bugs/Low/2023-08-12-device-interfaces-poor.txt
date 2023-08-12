@@ -1,0 +1,44 @@
+
+SUBJECT:
+
+  device/de_device.c
+  device/de_cursor.c
+  device/de_deadline.c
+  device/de_gpio.c
+
+OBSERVED:
+
+  main/main.c declares the ioregisters variable to which drivers must
+  write and which the device emulator must watch with watchpoints.
+  
+  device/de_ioregs.c has an ioregs variable that holds the address of
+  ioregisters.  Its watchpoint logic uses this ioregisters variable.
+
+  main/main.c initializes device/de_ioregs/ioregs by calling
+  de_device.c/device_init() and passing the address of its ioregisters
+  variable as a parameter.
+  
+  The device emulator modules use extern to provide the ioregs,
+  cursor, deadline, and machine_state variables to each other.
+
+EXPECTED:
+
+  In order to have cleaner interfaces with better information-hiding
+  characteristics, it might be better to do things this way:
+
+  (1) device/de_ioregs.c owns the ioregisters variable rather than
+  main/main.c.
+
+  (2) The device modules provide get/set functions to each other rather
+  than relying on externs for the ioregs, cursor, deadline, and
+  machine_state variables.
+
+  Note that the above two expectations are arguably separate issues.
+
+ANALYSIS
+
+  The fix to bug 2022-08-22-too-long.txt broke the formerly-huge
+  device emulator source into multiple smaller modules, but it didn't
+  do the necessary improvements to their interfaces described by this
+  bug.
+  

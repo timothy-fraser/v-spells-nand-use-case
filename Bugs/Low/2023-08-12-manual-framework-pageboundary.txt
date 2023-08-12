@@ -1,0 +1,29 @@
+
+SUBJECT
+
+  manual/framework.html
+
+OBSERVED
+
+In jump table section:
+
+   Test suites must take care to ask read_buffer() to read only within the
+   bounds of a single emulated NAND storage device page; the device
+   emulator will serve read_buffer() requests that cross a page boundary
+   but the data it provides for pages beyond the first will not accurately
+   reflect what is in its storage. Similarly, they must task care to ask
+   write_buffer() to write only within the bounds of a single page.
+
+EXPECTED
+
+   When the test suite asks the framework to read or write buffers
+   whose length exceeds one page, the framework must take care to
+   break this request into multiple invocations of read_buffer() or
+   write_buffer(), each with a length not greater than one page.  As
+   in the real world, drivers will execute read_buffer() and
+   write_buffer() requests with lengths greater than one page without
+   complaint and the device emulator will do <I>something</I> to serve
+   them, but the data the device emulator actually reads or writes
+   will likely not be what the test suite expects.
+
+
