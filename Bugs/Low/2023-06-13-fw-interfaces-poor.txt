@@ -1,14 +1,26 @@
 
 SUBJECT:
 
-    framework modules
-    device emulator modules
+    framework/framework.c
+    framework/fw_execop.c
+    framework/jumptable.c
 
 OBSERVED:
 
-    Modules expose global variables to callers.
+    framework/fw_execop.c and framework/jumptable.c use extern to
+    refer to a driver variable declared in framework/framework.c.
+    They use this variable to invoke the driver's jumpt table or
+    command interpreter functions.
+
+    main/main.c calls framework/framework.c:init_framework() and
+    framework/framework.c:init_framework() calls the get_driver()
+    function provided by whichever driver is linked to initialize this
+    driver variable.
 
 EXPECTED:
 
-    Clean interfaces with get/set methods and no exposed globals.
+    It *might* be better to introduce a new fw_driver.c module that
+    encapsulates this variable and provides a function fw_execop.c and
+    jumptable.c can call rather than using an extern.
+
 
