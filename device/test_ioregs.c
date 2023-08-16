@@ -53,7 +53,6 @@
  * the *address* of 'ioregisters'.
  */
 volatile unsigned long ioregisters = 0;  /* The IO registers variable. */
-extern volatile unsigned long *ioregs;   /* It's address, from de_ioregs.c */
 
 /* The parent/tracer will use this flag to track the child/tracee's
  * alternation between ioregisters writes (false) and ioregisters
@@ -136,7 +135,8 @@ handle_watchpoint(pid_t child_pid) {
 		/* Poke (write) the new test value we want the child
 		 * tracee to see in its ioregisters variable.
 		 */
-		ptrace(PTRACE_POKEDATA, child_pid, ioregs, VALUE_CORRECT);
+		ptrace(PTRACE_POKEDATA, child_pid, &ioregisters,
+			VALUE_CORRECT);
 
 		/* Get the child/tracee's CPU register state and then
 		 * update it so that it also shows the new test value.
@@ -178,8 +178,7 @@ tracer(pid_t child_pid) {
 	 * the ioregisters variable.  Set a CPU watchpoint to watch
 	 * ioregisters.
 	 */
-	ioregs = &ioregisters;
-	handle_watchpoint_setup(child_pid);
+	ioregs_init(&ioregisters, child_pid);
 	
 	/* Setup complete.  Let tracee continue. */
 	ptrace(PTRACE_CONT, child_pid, NULL, NULL);

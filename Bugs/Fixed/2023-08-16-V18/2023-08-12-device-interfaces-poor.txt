@@ -42,3 +42,20 @@ ANALYSIS
   do the necessary improvements to their interfaces described by this
   bug.
   
+  2023-08-16:
+
+  Fixed part (2) of this bug - refactored the device emulator modules
+  and gave them clean interfaces without externs.
+
+  Decided not to fix part (1) of this bug.  Began an attempt by moving
+  the ioregisters variable from main/main.c to device/de_ioregs.c and
+  carried out all the entailed changes to ioregister reads and writes
+  in other parts of the system.  These changes caused the compiler to
+  use a new flavor of the "mov" assemby instruction that was not
+  supported by our disassembler in device/de_ioregs.c Proceeding would
+  have required (a) more staring at the Intel programmer's manual to
+  learn how to decode the new movs, (b) updating the disassembler to
+  handle the new mov instructions, and (c) updating the assembly code
+  test cases in device/test_patterns.s.  This seemed like too much
+  work given that the fix for part (2) eliminated all the externs.
+  

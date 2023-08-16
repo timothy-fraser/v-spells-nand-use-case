@@ -1,8 +1,9 @@
-// Copyright (c) 2022 Provatek, LLC.
-
 /*
- * Routines for emulating the wall-clock time the device spends in a
- * busy state while performing certain operations.
+ * Device emulator deadline module for ready/busy condition tracking.
+ *
+ * Copyright (c) 2022 Provatek, LLC.
+ * Copyright (c) 2023 Timothy Jon Fraser Consulting LLC.
+ *
  */
 
 #include <sys/time.h>
@@ -13,8 +14,43 @@
 
 #define MICROSECONDS_IN_SECOND 1000000
 
-/* deadline (in microseconds since epoch) */
-unsigned long deadline = 0;
+static unsigned long deadline;  /* deadline (in microseconds since epoch) */
+
+
+/* deadline_clear()
+ *
+ * in:     nothing
+ * out:    deadline set by side-effect
+ * return: nothing
+ *
+ * Clears the deadline to 0, making the device ready.
+ *
+ */
+
+void
+deadline_clear(void) {
+	deadline = 0;
+} /* deadline_clear() */
+
+
+/* deadline_init()
+ *
+ * in:     nothing
+ * out:    deadline set by side-effect
+ * return: nothing
+ *
+ * Call this function on startup.  Presently this function simply
+ * calls deadline_clear() to start the device in a ready state.
+ * Retaining this function so that every de_*.c module has an _init()
+ * function.
+ *
+ */
+
+void
+deadline_init(void) {
+	deadline_clear();
+} /* deadline_init() */
+
 
 /*
  * before_deadline()
@@ -44,12 +80,11 @@ before_deadline(void) {
 	return false;
 }
 
-/*
- * set_deadline()
+
+/* set_deadline()
  *
- * in:  deadline - the current value of the deadline state variable
- *      duration - the duration (in microseconds) to add to the current time
- * out: deadline - set to the current time plus the duration
+ * in:     duration - the duration (in microseconds) to add to the current time
+ * out:    deadline - set to the current time plus the duration
  * return: nothing
  *
  * Sets the deadline state variable to be the current system time plus the
@@ -63,4 +98,5 @@ set_deadline(int duration) {
 	gettimeofday(&cur_time, NULL);
 	deadline = (cur_time.tv_sec * MICROSECONDS_IN_SECOND) +
 		   cur_time.tv_usec + duration;
-}
+	
+} /* set_deadline() */

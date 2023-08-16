@@ -1,29 +1,30 @@
-// Copyright (c) 2022 Provatek, LLC.
-
-/*
- * Routines for emulating General-Purpose Input-Output (GPIO) pins.
+/* General-Purpose Input-Output (GPIO) pin emulation module.
+ *
+ * Copyright (c) 2022 Provatek, LLC.
+ * Copyright (c) 2023 Timothy Jon Fraser Consulting LLC.
+ *
  */
 
-#include <sys/ptrace.h>
 #include <sys/types.h>
 #include <sys/user.h>
+#include <sys/ptrace.h>
 #include <unistd.h>
 #include <stdbool.h>
 
 #include "device_emu.h"
-#include "de_gpio.h"
 #include "de_deadline.h"
-#include "de_device.h"
+#include "de_parser.h"
+#include "de_gpio.h"
+
 
 #define RESET_DURATION 500          /* reset duration in microseconds */
 
-extern unsigned int machine_state;  /* device emulator state machine state */
 
 /*
  * handle_breakpoint_gpio_set()
  *
  * in:  p_regs - pointer to register struct containing tracee's register values
- * out: machine_state - reset to the initial state if reset pin is set 
+ * out: parser state reset via parser_reset()
  * return: nothing
  *
  * This function processes tracee calls to its gpio_set() function.
@@ -41,8 +42,7 @@ handle_breakpoint_gpio_set(struct user_regs_struct *p_regs) {
 		break;
 	case PN_RESET:
 		if (p_regs->rsi == true) {
-			clear_state();
-			machine_state = MS_INITIAL_STATE;
+			parser_reset();
 			usleep(RESET_DURATION);
 		}
 		break;

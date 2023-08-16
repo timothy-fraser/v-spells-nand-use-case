@@ -1,7 +1,8 @@
-// Copyright (c) 2022 Provatek, LLC.
-
-/*
- * Routines to emulate device Input-Output (IO) Registers.
+/* Device emulator Input-Output (IO) Register emulation module.
+ *
+ * Copyright (c) 2022 Provatek, LLC.
+ * Copyright (c) 2023 Timothy Jon Fraser Consulting LLC.
+ *
  */
 
 #include <sys/types.h>
@@ -38,22 +39,32 @@
 /* Address of the ioregisters variable.  The actual ioregister
  * variable is defined in main.c.
  */
-volatile unsigned long *ioregs;
+static volatile unsigned long *ioregs;
 
 
-/* handle_watchpoint_setup()
+/* ioregs_init()
  *
- * in:     child_pid - the PID of the child tracee
- * out:    none
- * return: none
+ * in:     in_ioregisters - address of ioregisters variable
+ *         child_pid      - PID of the child tracee
+ * out:    ioregs set via side effect
+ * return: nothing
  *
- * Sets up read-write watchpoint on the tracee's ioregisters variable.
+ * Call this on startup.  Sets up hardware watchpoint on child
+ * tracee's ioregisters variable so that the child tracee will trap
+ * and pass control to the parent tracer whenever the child tracee
+ * reads or writes ioregisters.
  *
  */
 
 void
-handle_watchpoint_setup(pid_t child_pid) {
+ioregs_init(volatile unsigned long *in_ioregisters, pid_t child_pid) {
 
+	/* Save address of ioregisters variable in ioregs. */
+	ioregs = in_ioregisters;
+
+	/*
+	 * Set up hardware watchpoint on child tracee's ioregisters variable.
+	 */
 	do {    /* Do once, break on error. Poor man's try/catch. */
 		
 		/* This sequence of PTRACE_POKEUSER operations sets
@@ -96,7 +107,7 @@ handle_watchpoint_setup(pid_t child_pid) {
 	perror("Failed ptrace watchpoint setup.");
 	exit(-1);
 	
-} /* handle_watchpoint_setup() */
+} /* ioregs_init() */
 
 
 /* error_dump()
