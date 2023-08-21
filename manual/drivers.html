@@ -221,14 +221,14 @@ below.  Each one invalidates one or more of the above properties.</P>
 </CENTER>    
 
 <PRE WIDTH="80">
-  timeout_time = clock() + wait_interval
+  timeout_time = now() + wait_interval
   
   DO
       IF gpio_get(PN_STATUS) == DEVICE_READY
           THEN RETURN 0
           ELSE sleep for POLLING_INTERVAL
       ENDIF
-  WHILE clock() < timeout_time
+  WHILE now() < timeout_time
 
   IF gpio_get(PN_STATUS) == DEVICE_READY
       THEN RETURN  0
@@ -240,11 +240,11 @@ below.  Each one invalidates one or more of the above properties.</P>
 
 <DL>
 
-  <DT> <CODE>clock()</CODE> <DD> The Linux kernel maintains a global
+  <DT> <CODE>now()</CODE> <DD> The Linux kernel maintains a global
        volatile <CODE>jiffies</CODE> variable whose value increases
        monotonically with CPU clock ticks.  Because the test rig runs
        in user rather than kernel mode, its drivers must call
-       the <CODE>clock()</CODE> function to emulate reading
+       the <CODE>now()</CODE> function to emulate reading
        the <CODE>jiffies</CODE> variable.
 
   <DT> <CODE>wait_interval</CODE> <DD> Callers use
@@ -254,7 +254,7 @@ below.  Each one invalidates one or more of the above properties.</P>
        indicating a timeout error condition.
 
   <DT> <CODE>POLLING_INTERVAL</CODE> <DD>
-       The <CODE>POLLING_INTERVAL</CODE> constant is 10 microseconds.
+       The <CODE>POLLING_INTERVAL</CODE> constant is 25 microseconds.
        The driver will sleep for <CODE>POLLING_INTERVAL</CODE>
        microseconds between each poll to avoid putting unnecessary
        load on the CPU.
@@ -282,7 +282,7 @@ identify the operation to these buggy wait-ready loop structures.</P>
 <P>Alpha 7 driver wait-ready loop structure:</P>
 
 <PRE WIDTH="80">
-  timeout_time = clock() + wait_interval
+  timeout_time = now() + wait_interval
   
   DO
       IF gpio_get(PN_STATUS) == DEVICE_READY
@@ -292,7 +292,7 @@ identify the operation to these buggy wait-ready loop structures.</P>
               THEN sleep for POLLING_INTERVAL
           ENDIF
       ENDIF
-  WHILE clock() < timeout_time
+  WHILE now() < timeout_time
 
   IF gpio_get(PN_STATUS) == DEVICE_READY
       THEN RETURN  0
@@ -304,9 +304,9 @@ identify the operation to these buggy wait-ready loop structures.</P>
 <P>Alpha driver 8 wait-ready loop structure:</P>
 
 <PRE WIDTH="80">
-  timeout_time = clock() + wait_interval
+  timeout_time = now() + wait_interval
   
-  WHILE clock() < timeout_time DO
+  WHILE now() < timeout_time DO
       status = gpio_get(PN_STATUS)
       IF we're waiting for an erase operation
       THEN
