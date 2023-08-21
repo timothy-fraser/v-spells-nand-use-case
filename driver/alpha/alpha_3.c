@@ -1,15 +1,16 @@
-// Copyright (c) 2022 Provatek, LLC.
+/* Copyright (c) 2022 Provatek, LLC.
+ * Copyright (c) 2023 Timothy Jon Fraser Consulting LLC.
+ */
 
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 
+#include "clock.h"
 #include "framework.h"
-#include "driver.h"
 #include "device_emu.h"
+#include "driver.h"
 
-#define NAND_POLL_INTERVAL_US 10  /* polling interval in microseconds */
 
 volatile unsigned long* driver_ioregister;
 
@@ -19,32 +20,20 @@ void nand_set_register(unsigned char offset, unsigned char value)
 	*((unsigned char*)driver_ioregister + offset) = value;
 }
 
-// Waits for device status to be ready for an 
-// Intended BUG: timeout is wrong
+// Waits for device status to be ready
+// Intended BUG: timeout is a moment in the distant past.  Loop will
+// always poll at least once.  If the device indicates ready on the
+// first poll, all will be well.  If it does not, this function will
+// immediately declare a timeout.
+
 int nand_wait(unsigned int interval_us)
 {
-	/* Some explanation on this timeout computation:
-	 *
-	 * We're trying to mimic what real Linux device drivers see: a
+	/* We're trying to mimic what real Linux device drivers see: a
 	 * volatile jiffies variable whose value increases
-	 * monotonically with clock ticks.  The clock() function has
-	 * similar behavior.  My Linux's bits/time.h indicates that
-	 * clock_t ticks are always microseconds, so rather than
-	 * converting microseconds to ticks using CLOCKS_PER_SEC /
-	 * 1000000, I'm just adding.  Although I worry that I'm losing
-	 * POSIX points by doing so, the simple addition mimics the
-	 * pattern real Linux device drivers would use.
+	 * monotonically with clock ticks.  The now() function has
+	 * similar behavior.
 	 */
-	/* clock_t timeout = clock() + interval_us; */
-
-	/* This first bug looks more plausible in the source.
-	 * Although it seems likely that clock() > NAND_TIMEOUT, it's
-	 * not guaranteed, so we'll go with the less plausible "= 0"
-	 * bug.
-	 *
-	 * clock_t timeout = interval_us;
-	 */
-	clock_t timeout = 0;   /* BUG */
+	timeus_t timeout = NAND_POLL_INTERVAL_US;   /* BUG */
 	do {
 		/* Extra bonus bug:  we need the driver to sleep long
 		 * enough for the device to become ready before the
@@ -58,7 +47,7 @@ int nand_wait(unsigned int interval_us)
 		if (gpio_get(PN_STATUS) == DEVICE_READY) {
 			return 0;
 		}
-	} while(clock() < timeout);
+	} while(now() < timeout);
 	return -1;
 }
 

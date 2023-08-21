@@ -1,15 +1,16 @@
-// Copyright (c) 2022 Provatek, LLC.
+/* Copyright (c) 2022 Provatek, LLC.
+ * Copyright (c) 2023 Timothy Jon Fraser Consulting LLC.
+ */
 
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 
+#include "clock.h"
 #include "framework.h"
-#include "driver.h"
 #include "device_emu.h"
+#include "driver.h"
 
-#define NAND_POLL_INTERVAL_US 10  /* polling interval in microseconds */
 
 volatile unsigned long* driver_ioregister;
 
@@ -26,21 +27,14 @@ void nand_set_register(unsigned char offset, unsigned char value)
 // Intended bug:  never times out on erase operations.
 int nand_wait(unsigned int interval_us)
 {
-	/* Some explanation on this timeout computation:
-	 *
-	 * We're trying to mimic what real Linux device drivers see: a
+	/* We're trying to mimic what real Linux device drivers see: a
 	 * volatile jiffies variable whose value increases
-	 * monotonically with clock ticks.  The clock() function has
-	 * similar behavior.  My Linux's bits/time.h indicates that
-	 * clock_t ticks are always microseconds, so rather than
-	 * converting microseconds to ticks using CLOCKS_PER_SEC /
-	 * 1000000, I'm just adding.  Although I worry that I'm losing
-	 * POSIX points by doing so, the simple addition mimics the
-	 * pattern real Linux device drivers would use.
+	 * monotonically with clock ticks.  The now() function has
+	 * similar behavior.
 	 */
-	clock_t timeout = clock() + interval_us;
+	timeus_t timeout = now() + interval_us;
 	unsigned int status;
-	while (clock() < timeout) {
+	while (now() < timeout) {
 		status = gpio_get(PN_STATUS);
 		if (curCmd == C_ERASE_EXECUTE) {
 			while (status != DEVICE_READY) {
@@ -57,7 +51,7 @@ int nand_wait(unsigned int interval_us)
 		} 
 	}
 
-	return -1;
+	return ((gpio_get(PN_STATUS) == DEVICE_READY) ? 0 : -1);
 }
 
 // Reads the data in to buffer in the nand device at offset with length of size
