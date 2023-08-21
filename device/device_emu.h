@@ -36,6 +36,12 @@
 #define NUM_PAGES  256
 #define NUM_BYTES  256
 
+/* Durations (microseconds) */
+#define READ_PAGE_DURATION   100
+#define WRITE_PAGE_DURATION  600
+#define ERASE_BLOCK_DURATION 2000
+#define RESET_DURATION       500
+
 void device_init(volatile unsigned long *in_ioregisters, pid_t child_pid);
 
 #endif

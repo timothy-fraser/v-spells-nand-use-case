@@ -12,12 +12,10 @@
 #include <stdbool.h>
 
 #include "device_emu.h"
+#include "clock.h"
 #include "de_deadline.h"
 #include "de_parser.h"
 #include "de_gpio.h"
-
-
-#define RESET_DURATION 500          /* reset duration in microseconds */
 
 
 /*

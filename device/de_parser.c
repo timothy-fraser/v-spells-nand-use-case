@@ -15,6 +15,7 @@
 #include <stdio.h> 
 
 #include "device_emu.h"
+#include "clock.h"
 #include "de_deadline.h"
 #include "de_store.h"
 #include "de_ioregs.h"
@@ -146,8 +147,9 @@ handle_watchpoint_ioregisters(pid_t child_pid,
 	command = (peeked & MASK_COMMAND) >> COMMAND_SHIFT;
 
 #ifdef DIAGNOSTICS	
-	printf("Device emulator in state %02u received "
+	printf("Device emulator %s in state %02u received "
 	       "C=%02u, A=0x%02x, D=0x%02x.\n",
+	       (before_deadline() ? "busy" : "ready"),
 	       machine_state, command,
 	       (peeked & MASK_ADDRESS) >> ADDRESS_SHIFT,
 	       (peeked & MASK_DATA));

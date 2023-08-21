@@ -10,11 +10,16 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#if defined(DIAGNOSTICS_GET) || defined(DIAGNOSTICS_SET)
+#include <stdio.h>
+#endif
+
+#include "clock.h"
 #include "de_deadline.h"
 
 #define MICROSECONDS_IN_SECOND 1000000
 
-static unsigned long deadline;  /* deadline (in microseconds since epoch) */
+static timeus_t deadline;  /* deadline (in microseconds since epoch) */
 
 
 /* deadline_clear()
@@ -67,17 +72,19 @@ deadline_init(void) {
 
 bool
 before_deadline(void) {
+
+	timeus_t timenow = now();
+
+#ifdef DIAGNOSTICS_GET
+	if (timenow < deadline) {
+		printf("Device busy at time 0x%lX on deadline 0x%lX "
+		       "(%lu us).\n", timenow, deadline,
+			(deadline - timenow));
+	}
+#endif
 	
-	struct timeval cur_time;
+	return (timenow < deadline);
 
-	gettimeofday(&cur_time, NULL);
-	unsigned long cur_total = (cur_time.tv_sec * MICROSECONDS_IN_SECOND) +
-				  cur_time.tv_usec;
-
-	if (cur_total < deadline)
-		return true;
-
-	return false;
 }
 
 
@@ -92,11 +99,12 @@ before_deadline(void) {
  */
 
 void
-set_deadline(int duration) {
-	
-	struct timeval cur_time;
-	gettimeofday(&cur_time, NULL);
-	deadline = (cur_time.tv_sec * MICROSECONDS_IN_SECOND) +
-		   cur_time.tv_usec + duration;
+set_deadline(timeus_t duration) {
+
+	deadline = now() + duration;
+
+#ifdef DIAGNOSTICS_SET
+	printf("Device set deadline 0x%lx (%lu us).\n", deadline, duration);
+#endif
 	
 } /* set_deadline() */

@@ -1,5 +1,6 @@
 
 all:
+	cd clock ; make
 	cd device ; make
 	cd framework ; make
 	cd tester ; make
@@ -7,6 +8,7 @@ all:
 	cd driver ; make
 
 clean:
+	cd clock ; make clean
 	cd device ; make clean
 	cd framework ; make clean
 	cd tester ; make clean
