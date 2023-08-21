@@ -1,0 +1,100 @@
+
+SUBJECT:
+
+  Witnessed while testing foxtrot_0 driver, but this may well be a
+  framework or device emulator bug related to timeouts.
+
+OBSERVED:
+
+
+FOXTROT 0 DRIVER
+Test 2 of 4:
+	Erase start 0xfe0000 (first block 254 page   0 byte   0)
+	       size 0x040000  (last block   1 page 255 byte 255)
+	Erase start 0x018e1c (first block   1 page 142 byte  28)
+	       size 0x0017e3  (last block   1 page 165 byte 254)
+	Erase start 0xff1be4 (first block 255 page  27 byte 228)
+	       size 0x026e4d  (last block   1 page 138 byte  48)
+	 Read start 0xfe51c6 (first block 254 page  81 byte 198)
+	       size 0x036d29  (last block   1 page 190 byte 238)
+	Write start 0x00a1ec (first block   0 page 161 byte 236)
+	       size 0x0038c2  (last block   0 page 218 byte 173)
+	 Read start 0xffa44c (first block 255 page 164 byte  76)
+	       size 0x00d7a6  (last block   0 page 123 byte 241)
+	Write start 0xff4677 (first block 255 page  70 byte 119)
+	       size 0x012538  (last block   0 page 107 byte 174)
+	 Read start 0xff79fa (first block 255 page 121 byte 250)
+	       size 0x01ec20  (last block   1 page 102 byte  25)
+	 Read start 0x0064fb (first block   0 page 100 byte 251)
+	       size 0x001e82  (last block   0 page 131 byte 124)
+	 Read start 0xfe0000 (first block 254 page   0 byte   0)
+	       size 0x040000  (last block   1 page 255 byte 255)
+	Device timed out on read operation.
+	Test result: fail.
+
+EXPECTED:
+
+  No timeouts on read, test passed.
+
+ANALYSIS:
+
+  These read timeouts don't happen on every read.
+
+2023-08-21:
+
+Researchers who enjoy reasoning about time may want to experiment with
+the buggy V17 version of the drivers with this bug.
+
+The V17 driver/alpha/alpha_0.c wait-ready loop looked like this:
+
+int nand_wait(unsigned int interval_us)
+{
+	clock_t timeout = clock() + interval_us;
+	
+	while(clock() < timeout) {
+		if (gpio_get(PN_STATUS) == DEVICE_READY) {
+			return 0;
+		}
+		usleep(NAND_POLL_INTERVAL_US);
+	}
+	return -1;
+}
+
+The key bug is the final "return -1".  The V18 fixed version, like the
+real Linux drivers/mtd/nand/raw/nand_base.c:nand_gpio_waitrdy(), ends
+with a final gpio_get() check, instead:
+
+	return ((gpio_get(PN_STATUS) == DEVICE_READY) ? 0 : -1);
+
+Without this final check, the following intermittent spurious timeout
+can happen:
+
+    (1) The final call to gpio_get() in the loop polls the device just
+        before the device's deadline and sees the device is busy.
+
+    (2) The loop sleeps past the device's deadline.  The device is now
+        ready, but the driver is still working from the stale result
+        of the loop's final gpio_get() call and doesn't know it.
+
+    (3) The loop checks now() and terminates.  Because the function
+        simply returns -1 without calling gpio_get() to see the device
+        is ready, it declares a spurious timeout.
+
+
+The fix involved two changes:
+
+ - The addition of the final gpio_get() call described above, and
+ - The addition of a new common monotonic microsecond clock for use
+   by both the device emulator and drivers.
+
+Researchers who enjoy reasoning about time might also be interested in
+a clock/clock.c bug I had during development.  I had
+
+#define  S_TO_US(s)   ((s) * (timeus_t)1000)
+
+instead of
+
+#define  S_TO_US(s)   ((s) * (timeus_t)1000000)
+
+This bug led to the microsecond clock appearing to hop backwards
+whenever CLOCK_MONOTONIC ticked over to a new second.  Fun times!
