@@ -12,28 +12,62 @@ includes several details specific to 64-bit Intel instruction set
 CPUs; the test rig will build only on GNU/Linux platforms with this
 kind of CPU.</P>
 
-<P>Test rig makefile's default target will build multiple executables,
-one for each example driver.  To build this default target, simply
+<P>Test rig makefile's default target will build four kinds of executables:
+
+<DL>
+
+<DT> System tests: <DD> The makefile will build one system test
+     executable for each driver.  These executables will be
+     named <CODE>test_alpha_0</CODE>, <CODE>test_alpha_1</CODE>, and
+     so on.  These system tests are the most important executables;
+     Subsection 6.1 below describes how to run them.
+
+<DT> Stochastic test oracle unit test: <DD>The system tests have a
+     stochastic test (that is, "fuzzing") mode that performs a random
+     series of read, write, and erase operations on the emulated
+     device and then compares the emulated device's contents to an
+     oracle that always indicates the correct contents.  This oracle
+     is sufficiently complex to need its own unit
+     test, <CODE>test_mirror</CODE>.
+    
+<DT> Device emulator unit tests: <DD>The makefile will also build a
+     collection of unit tests for some key device emulator
+     components.  <CODE>test_ioregs</CODE> tests
+     the <CODE>ptrace()</CODE>-based debugger logic the device
+     emulator uses to simulate IO registers.  This is a good test to
+     run first,  particularly if you are running the tests in a
+     virtual machine. If this debugger logic doesn't work on your CPU,
+     nothing will work.  <CODE>test_device</CODE> tests the device
+     emulator component using its IO registers.
+
+    <DT> Alpha driver nand_wait() unit
+    tests: <DD> <A HREF="drivers.html">Section 5</A>
+    defined a number of timing properties for correct driver
+    wait-ready loops.  These timing properties are difficult to
+    measure in system tests because of the measurement noise
+    introduced by the large amount of computation executed in the full
+    test rig.  The Makfile builds a collection of unit
+    tests <CODE>test_wait_alpha_[012378]</CODE> that test the correct
+    alpha 0 driver and the alpha variants with wait-ready loop bugs in
+    isolation.
+
+</DL>
+	
+To build all of these executables, simply
 run:</P>
 
 <PRE>
       make
 </PRE>
 
-<P>The makefile has specific targets for each example driver.  To build
-an executable for a specific driver, run make with the target named
-for that driver, for example:</P>
-
-<PRE>
-      make test_alpha_0
-</PRE>
-
 <P>Researchers can extend the makefile to include similar specific
 targets for their own DSL-based driver reimplementations.</P>
 
-<P>Running a test rig executable runs the test suite for the
-  configured driver.  Each executable has two modes controlled by
-  command-line options:</P>
+<H2>6.1.  Running the system tests</H2>
+
+<P>Each <CODE>test_alpha_?</CODE>, <CODE>test_foxtrot_?</CODE>,
+and <CODE>test_kilo_?</CODE> system test executable has two modes
+controlled by command-line options:</P>
 
 <DL>
   <DT>--deterministic <DD> runs a short test that covers only a small
@@ -58,7 +92,7 @@ targets for their own DSL-based driver reimplementations.</P>
 deliberate hanging bugs with ctrl-C.</P>
 
 
-<H2> 6.1.  A warning about debugging</H2>
+<H2> 6.2.  A warning about debugging</H2>
 
 <P>The test rig's parent tracer process runs the device emulator and
 debugs the child tracee process using the Ptrace library.  The parent
@@ -79,7 +113,7 @@ will do <EM>something</EM> to the emulated storage device and wait patiently
 for the dead child tracee to proceed, causing the test rig to hang.</P>
 
 
-<H2>6.2.  A warning about instruction support</H2>
+<H2>6.3.  A warning about instruction support</H2>
 
 <P>When the child tracee uses a mov instruction to read from the emulated
 IO register, the instruction moves the incorrect value present at that
