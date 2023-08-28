@@ -35,15 +35,7 @@ int nand_wait(unsigned int interval_us)
 	 */
 	timeus_t timeout = NAND_POLL_INTERVAL_US;   /* BUG */
 	do {
-		/* Extra bonus bug:  we need the driver to sleep long
-		 * enough for the device to become ready before the
-		 * driver's first poll, otherwise the above timeout
-		 * calculation bug will be found in test every time.
-		 * Incorrectly using the timeout interval for the
-		 * polling interval will accomplish this.
-		 */
-		/* usleep(NAND_POLL_INTERVAL_US); */
-		usleep(interval_us);
+		usleep(NAND_POLL_INTERVAL_US);
 		if (gpio_get(PN_STATUS) == DEVICE_READY) {
 			return 0;
 		}
