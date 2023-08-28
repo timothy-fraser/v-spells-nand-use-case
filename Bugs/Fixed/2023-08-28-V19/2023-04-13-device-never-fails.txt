@@ -59,3 +59,17 @@ The key idea for this approach is that the driver controls the device
 emulator mode and switches it as it runs though its test cases, rather
 than the driver mode being specified with a command-line switch and
 being fixed for the entire run.
+
+2023-08-28:
+
+I initially tried the above approach to fix this bug: I added a GPIO
+pin that would put the device emulator into a test mode where, once an
+execute operation made it busy, it would never become ready again
+until it exited that test mode.  This solution worked, but I found
+that there was too much measurement noise in the full test rig to
+easily measure the tiny wall-clock-time and CPU-usage-time differences
+I needed to test nand_wait() correctness.
+
+I ultimately wound up leaving the device emulator as it was and
+implementing the nand_wait() tests as separate unit test programs,
+instead.  They are now under driver/test.
