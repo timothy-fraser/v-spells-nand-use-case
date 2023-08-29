@@ -2,6 +2,7 @@
 Emulated NAND Flash Storage Device Driver Use Case
 
 Copyright (c) 2022 Provatek, LLC.
+
 Copyright (c) 2023 Timothy Jon Fraser Consulting LLC.
 
         This material is based upon work supported by the Defense
