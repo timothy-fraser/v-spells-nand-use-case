@@ -1,0 +1,6 @@
+KILO 2 DRIVER
+Verifying: Dummy device in original DIB.
+Verifying new DIB...
+Verifying: Provatek, LLC NAND Provastore.
+DIB: device has no controller chip.
+Fail - new DIB is not well-formed.

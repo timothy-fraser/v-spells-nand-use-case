@@ -1,0 +1,6 @@
+Pattern movzbl AX: pass.
+Pattern movzbl CX: pass.
+Pattern movzbl DX: pass.
+Pattern mov AX: pass.
+Pattern mov CX: pass.
+Pattern mov DX: pass.

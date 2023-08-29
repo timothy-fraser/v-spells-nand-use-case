@@ -1,0 +1,12 @@
+ALPHA 3 DRIVER
+Test: store 300 bytes to device, retrieve them, and compare.
+
+Data to write to device:
+
+abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
+ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
+qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
+yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
+ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
+Writing data...
+Failed to write 300 bytes to storage address 0.

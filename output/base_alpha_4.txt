@@ -1,0 +1,21 @@
+ALPHA 4 DRIVER
+Test: store 300 bytes to device, retrieve them, and compare.
+
+Data to write to device:
+
+abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
+ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
+qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
+yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
+ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
+Writing data...
+Reading data...
+Data read from device (ideally identical):
+
+abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
+ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
+qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
+yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
+ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghij----
+
+Fail - buffers differ at index 296.

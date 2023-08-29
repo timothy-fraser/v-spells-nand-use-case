@@ -1,0 +1,6 @@
+KILO 4 DRIVER
+Verifying: Dummy device in original DIB.
+Verifying new DIB...
+Verifying: Provatek, LLC NAND Provastore.
+DIB: storage chip has reference count != 1.
+Fail - new DIB is not well-formed.

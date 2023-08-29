@@ -1,0 +1,49 @@
+ALPHA 0 DRIVER
+Test 1 of 2:
+	Erase start 0xfe0000 (first block 254 page   0 byte   0)
+	       size 0x040000  (last block   1 page 255 byte 255)
+	 Read start 0xff0d74 (first block 255 page  13 byte 116)
+	       size 0x02b5f3  (last block   1 page 195 byte 102)
+	 Read start 0xfe6866 (first block 254 page 104 byte 102)
+	       size 0x037296  (last block   1 page 218 byte 251)
+	Erase start 0xfe354f (first block 254 page  53 byte  79)
+	       size 0x02c0f8  (last block   0 page 246 byte  70)
+	 Read start 0x008e7d (first block   0 page 142 byte 125)
+	       size 0x00c832  (last block   1 page  86 byte 174)
+	Write start 0xff49ac (first block 255 page  73 byte 172)
+	       size 0x02b371  (last block   1 page 253 byte  28)
+	 Read start 0x00d250 (first block   0 page 210 byte  80)
+	       size 0x004cf5  (last block   1 page  31 byte  68)
+	Write start 0xfec7ca (first block 254 page 199 byte 202)
+	       size 0x0255b6  (last block   1 page  29 byte 127)
+	 Read start 0xfef136 (first block 254 page 241 byte  54)
+	       size 0x0259b1  (last block   1 page  74 byte 230)
+	 Read start 0xfe0000 (first block 254 page   0 byte   0)
+	       size 0x040000  (last block   1 page 255 byte 255)
+	Test result: pass.
+
+Test 2 of 2:
+	Erase start 0xfe0000 (first block 254 page   0 byte   0)
+	       size 0x040000  (last block   1 page 255 byte 255)
+	Write start 0xfe56d7 (first block 254 page  86 byte 215)
+	       size 0x0217be  (last block   0 page 110 byte 148)
+	 Read start 0xfe25f5 (first block 254 page  37 byte 245)
+	       size 0x01aa12  (last block 255 page 208 byte   6)
+	 Read start 0xff5a34 (first block 255 page  90 byte  52)
+	       size 0x00e114  (last block   0 page  59 byte  71)
+	 Read start 0xfe412d (first block 254 page  65 byte  45)
+	       size 0x031072  (last block   1 page  81 byte 158)
+	 Read start 0xfe3fbb (first block 254 page  63 byte 187)
+	       size 0x030080  (last block   1 page  64 byte  58)
+	 Read start 0xff498d (first block 255 page  73 byte 141)
+	       size 0x026967  (last block   1 page 178 byte 243)
+	Write start 0xfe0b1a (first block 254 page  11 byte  26)
+	       size 0x038c55  (last block   1 page 151 byte 110)
+	Erase start 0x00a495 (first block   0 page 164 byte 149)
+	       size 0x00d056  (last block   1 page 116 byte 234)
+	 Read start 0xfe0000 (first block 254 page   0 byte   0)
+	       size 0x040000  (last block   1 page 255 byte 255)
+	Test result: pass.
+
+Ran 2 tests in 51 seconds (25.500000 seconds/test).
+All tests passed.

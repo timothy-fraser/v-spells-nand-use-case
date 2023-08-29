@@ -1,0 +1,5 @@
+ALPHA 2 DRIVER
+Executing nand_wait(10000000us) on busy device for read operation.
+	Measured wall-clock time exceeded 20000000us.
+Test: confirm nand_wait() indicated timeout: fail.
+At least one test failed.

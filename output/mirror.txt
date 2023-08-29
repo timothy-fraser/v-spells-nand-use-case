@@ -1,0 +1,26 @@
+Test: store and retrieve 0x010000 bytes to mirror index 0x01ff0107,
+      true start index 0x01ff0100 block 255 page 001 offset 000,
+        true end index 0x020001ff block 000 page 001 offset 255.
+      Writing data...
+      Reading data (ideally, identical)...
+      Pass - confirmed data read matched data written,
+             prefix of first page zeroed, and postfix of last page zeroed.
+
+Test: erase a range of 0x010000 bytes starting at index 0x01ff0107,
+      true start index 0x01ff0000 block 255 page 000 offset 000,
+        true end index 0x0200ffff block 000 page 255 offset 255.
+      Pass - confirmed entire range of complete blocks zeroed.
+
+Test: store and retrieve 0x1000000 bytes to mirror index 0x00000000,
+      true start index 0x00000000 block 000 page 000 offset 000,
+        true end index 0x00ffffff block 255 page 255 offset 255.
+      Writing data...
+      Reading data (ideally, identical)...
+      Pass - confirmed data read matched data written,
+             prefix of first page zeroed, and postfix of last page zeroed.
+
+Test: erase a range of 0x1000000 bytes starting at index 0x00000000,
+      true start index 0x00000000 block 000 page 000 offset 000,
+        true end index 0x00ffffff block 255 page 255 offset 255.
+      Pass - confirmed entire range of complete blocks zeroed.
+

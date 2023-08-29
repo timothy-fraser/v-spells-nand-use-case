@@ -1,0 +1,5 @@
+KILO 1 DRIVER
+Verifying: Dummy device in original DIB.
+Verifying new DIB...
+Verifying: Provatek, LLC NAND Provastore.
+Fail - driver failed to preserve original DIB entries.

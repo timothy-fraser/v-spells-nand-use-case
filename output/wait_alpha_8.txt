@@ -1,0 +1,19 @@
+ALPHA 8 DRIVER
+Executing nand_wait(10000000us) on busy device for read operation.
+	Measured wall-clock time:  10000050us.
+	Measured CPU time:          1268490us.
+	Computed sleep percent:          87%.
+	Test: confirm nand_wait() indicated timeout:               pass.
+	Test: confirm nand_wait() waited at least 10000000us:      pass.
+	Test: confirm nand_wait() slept more than 50% of the wait: pass.
+Executing nand_wait(10000000us) on busy device for write operation.
+	Measured wall-clock time:  10000053us.
+	Measured CPU time:          1276773us.
+	Computed sleep percent:          87%.
+	Test: confirm nand_wait() indicated timeout:               pass.
+	Test: confirm nand_wait() waited at least 10000000us:      pass.
+	Test: confirm nand_wait() slept more than 50% of the wait: pass.
+Executing nand_wait(10000000us) on busy device for erase operation.
+	Measured wall-clock time exceeded 20000000us.
+Test: confirm nand_wait() indicated timeout: fail.
+At least one test failed.

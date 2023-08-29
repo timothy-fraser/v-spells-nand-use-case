@@ -1,0 +1,42 @@
+KILO 0 DRIVER
+Verifying: Dummy device in original DIB.
+Verifying new DIB...
+Verifying: Provatek, LLC NAND Provastore.
+Verifying: Dummy device in original DIB.
+Pass - confirmed DIB well-formed after driver initialization.
+
+Test: store 300 bytes to device, retrieve them, and compare.
+
+Data to write to device:
+
+abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
+ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
+qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
+yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
+ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
+Writing data...
+Reading data...
+Data read from device (ideally identical):
+
+abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefgh
+ijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnop
+qrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwx
+yzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdef
+ghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn
+
+Pass - comparison confirms match.
+
+Test: erase device blocks, retrieve erased data, and confirm it is zeroed:
+
+Erasing blocks...
+Reading erased blocks...
+Data read from device (ideally zeroed):
+
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+------------------------------------------------------------
+
+Pass - examination confirms all-zeroes.
+
