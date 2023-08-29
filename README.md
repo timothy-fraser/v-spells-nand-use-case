@@ -2,15 +2,15 @@
 Emulated NAND Flash Storage Device Driver Use Case
 
 Copyright (c) 2022 Provatek, LLC.
+Copyright (c) 2023 Timothy Jon Fraser Consulting LLC.
 
-        This material is based upon work supported by the
-        Defense Advanced Research Projects Agency (DARPA)
-        and Naval Information Warfare Center Pacific (NIWC
-        Pacific) under Contract No. N66001-21-C-4026. Any
-        opinions, findings and conclusions or
-        recommendations expressed in this material are those
-        of the author(s) and do not necessarily reflect the
-        views of DARPA or NIWC Pacific.
+        This material is based upon work supported by the Defense
+        Advanced Research Projects Agency (DARPA) and Naval
+        Information Warfare Center Pacific (NIWC Pacific) under
+        Contract Nos. N66001-21-C-4026 and N66001-21-C-4021. Any
+        opinions, findings and conclusions or recommendations
+        expressed in this material are those of the author(s) and do
+        not necessarily reflect the views of DARPA or NIWC Pacific.
 
         In the event permission is required, DARPA is
         authorized to reproduce the copyrighted material for
@@ -21,6 +21,7 @@ Copyright (c) 2022 Provatek, LLC.
         This software distribution is ** Approved for Public
         Release, Distribution Unlimited. ** (DISTAR Case
         #37059.)
+
 
 This Emulated NAND Flash Storage Device Driver Use Case software
 distribution provides a test rig, corpus, and documentation to support
@@ -86,6 +87,13 @@ Bugs               - a database of bugs for the last month of work on
 Makefile           - Makefile for building the test rig and its test
                      programs.
 
-device, driver, framework, tester, main - these directories hold the
-                     source for each of the test rig's components.
+clock, device, driver, framework, tester, main - these directories
+                     hold the source for each of the test rig's
+                     components.
 
+objects            - the build process drops its archive libraries
+                     here.
+
+output             - the text files in this directory contain the
+                     expected output of all of the test rig's unit and
+                     system test programs.
