@@ -37,12 +37,14 @@ st_deterministic(void) {
 	data_print(data, DATA_SIZE);
 
 	puts("Writing data...");
+	fflush(stdout);
 	if (write_nand(data, STORAGE_ADDR, DATA_SIZE)) {
 		printf("Failed to write %u bytes to storage address %u.\n",
 		       DATA_SIZE, STORAGE_ADDR);
 		return -1;
 	}
 	puts("Reading data...");
+	fflush(stdout);
 	if (read_nand(dest, STORAGE_ADDR, DATA_SIZE)) {
 		printf("Failed to read %u bytes from storage address %u.\n",
 		       DATA_SIZE, STORAGE_ADDR);
@@ -62,12 +64,14 @@ st_deterministic(void) {
 	       "and confirm it is zeroed:\n\n");
 
 	puts("Erasing blocks...");
+	fflush(stdout);
 	if (erase_nand(STORAGE_ADDR, DATA_SIZE)) {
 		printf("Failed to erase %u bytes from storage address %u.\n",
 		       DATA_SIZE, STORAGE_ADDR);
 		return -1;
 	}
 	puts("Reading erased blocks...");
+	fflush(stdout);
 	if (read_nand(dest, STORAGE_ADDR, DATA_SIZE)) {
 		printf("Failed to read %u bytes from storage address %u.\n",
 		       DATA_SIZE, STORAGE_ADDR);
