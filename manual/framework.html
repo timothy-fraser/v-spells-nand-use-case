@@ -89,13 +89,14 @@ test suite would make this series of calls through the jump table:</P>
 
 </OL>
 
-</P> Test suites must take care to ask <CODE>read_buffer()</CODE> to
-read only within the bounds of a single emulated NAND storage device
-page; the device emulator will serve <CODE>read_buffer()</CODE>
-requests that cross a page boundary but the data it provides for pages
-beyond the first will not accurately reflect what is in its storage.
-Similarly, they must task care to ask <CODE>write_buffer()</CODE> to
-write only within the bounds of a single page.</P>
+<P> When the test suite asks the framework to read buffers whose
+length exceeds one page, the framework must take care to break this
+request into multiple invocations of <CODE>read_buffer()</CODE>, each
+with a length not greater than one page.  As in the real world,
+drivers will execute <CODE>read_buffer()</CODE> requests with lengths
+greater than one page without complaint and the device emulator will
+do <EM>something</EM> to serve them, but the data the device emulator
+actually reads will likely not be what the test suite expects.
 
 <P>Test suites must ask the framework to make a similar series of
 calls through the driver's jump table to properly implement write and
